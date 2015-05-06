@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>SecretIn</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <!-- <link rel="stylesheet" href="styles/main.css"> -->
+  </head>
+  <body>
+  <h2>Database</h2>
+  <textarea id="db" rows=20 cols=50>{"users":{}, "secrets": {}}</textarea>
+
+  <h2>New User</h2>
+  Username : <input type="text" id="newUsername" /><br />
+  Master Password : <input type="password" id="newPassword" /><br />
+  <input type="button" id="newUser" value="New user" />
+
+
+  <h2>Get your keys</h2>
+  Username : <input type="text" id="username" /><br />
+  Master Password : <input type="password" id="password" /><br />
+  <input type="button" id="getKeys" value="Get keys" />
+
+  <h2 id="currentUser">Not connected</h2>
+  <div id="secrets" style="margin-left: 30px; display: none">
+    <h2>Add Secret</h2>
+    Secret Ttile : <input type="text" id="secretTitle"><br />
+    Secret Content : <br />
+    <textarea id="secretContent"></textarea><br />
+    <input type="button" id="addSecret" value="Add secret" />
+    <h2>Secrets list</h2>
+    <ul id="secretsList"></ul>
+  </div>
+
+    <script src="scripts/lib/util.js"></script>
+    <script src="scripts/lib/crypto.js"></script>
+    <script src="scripts/lib/http.js"></script>
+    <script src="scripts/API.js"></script>
+    <script src="scripts/User.js"></script>
+    <script src="scripts/main.js"></script>
+  </body>
+</html>

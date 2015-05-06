@@ -1,0 +1,30 @@
+{
+  "name": "secretin",
+  "version": "1.0.0",
+  "description": "Open source secret manager with groups managment based on webapi crypto https://developer.mozilla.org/en-US/docs/Web/API/Crypto",
+  "main": "index.js",
+  "dependencies": {
+    "gulp": "^3.8.11"
+  },
+  "devDependencies": {
+    "gulp": "^3.8.11",
+    "gulp-babel": "^5.1.0",
+    "gulp-build": "^0.5.3",
+    "gulp-mocha": "^2.0.1",
+    "gulp-open": "^0.3.2",
+    "gulp-util": "^3.0.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agix/secretin.git"
+  },
+  "author": "agix",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/agix/secretin/issues"
+  },
+  "homepage": "https://github.com/agix/secretin"
+}
