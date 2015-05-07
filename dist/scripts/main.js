@@ -30,6 +30,7 @@ document.getElementById('newUser').addEventListener('click', function (e) {
             document.getElementById('currentUser').textContent = user.username;
             document.getElementById('secrets').style.display = '';
             document.getElementById('db').value = JSON.stringify(api.db);
+            getSecretList(user);
           }, function (e) {
             alert(e);
           });
@@ -57,8 +58,8 @@ document.getElementById('getKeys').addEventListener('click', function (e) {
     document.getElementById('currentUser').textContent = user.username;
     document.getElementById('secrets').style.display = '';
     getSecretList(user);
-  }, function (e) {
-    alert(e);
+  }, function (err) {
+    alert(err);
   });
 });
 
@@ -76,6 +77,36 @@ document.getElementById('addSecret').addEventListener('click', function (e) {
     }
   });
 });
+
+function share(e) {
+  var hash = e.path[1].children[0].textContent;
+  var encryptedSecret = api.getSecret(hash);
+  var friendName = prompt('Which friend ?');
+  var friend = new User(friendName);
+  var result = {};
+  e.target.disabled = true;
+  api.getPublicKey(friend.username).then(function (publicKey) {
+    return friend.importPublicKey(publicKey);
+  }).then(function () {
+    return api.getKeys(user.username);
+  }).then(function (keys) {
+    return user.unwrapKey(keys[hash].key);
+  }).then(function (key) {
+    return user.wrapKey(key, friend.publicKey, friend.username);
+  }).then(function (wrappedKey) {
+    result.hashedFriendName = wrappedKey.username;
+    result.wrappedKey = wrappedKey.key;
+    return user.encryptTitle(user.titles[hash], friend.publicKey);
+  }).then(function (encryptedTitle) {
+    return api.shareKey(user.username, result.hashedFriendName, result.wrappedKey, encryptedTitle, hash, 0);
+  }).then(function () {
+    document.getElementById('db').value = JSON.stringify(api.db);
+    e.target.disabled = false;
+  }, function (err) {
+    e.target.disabled = false;
+    alert(err);
+  });
+}
 
 function unHide(e) {
   var hash = e.path[1].children[0].textContent;
@@ -97,7 +128,8 @@ function unHide(e) {
   }
 }
 
-function uiSecret(title) {
+function uiSecret(hash, title) {
+
   var elem = document.createElement('li');
   elem.classList.add('secretElem');
   var secret = document.createElement('input');
@@ -110,16 +142,22 @@ function uiSecret(title) {
   btn.value = 'Unhide';
   btn.addEventListener('click', unHide);
 
-  var titleSpan = document.createElement('span');
-  titleSpan.textContent = title.clear.substring(14);
+  var shareBtn = document.createElement('input');
+  shareBtn.type = 'button';
+  shareBtn.value = 'Share';
+  shareBtn.addEventListener('click', share);
 
-  var hash = document.createElement('span');
-  hash.textContent = title.hash;
-  hash.style.display = 'none';
-  elem.appendChild(hash);
+  var titleSpan = document.createElement('span');
+  titleSpan.textContent = title.substring(14);
+
+  var hashSpan = document.createElement('span');
+  hashSpan.textContent = hash;
+  hashSpan.style.display = 'none';
+  elem.appendChild(hashSpan);
   elem.appendChild(titleSpan);
   elem.appendChild(secret);
   elem.appendChild(btn);
+  elem.appendChild(shareBtn);
   return elem;
 }
 
@@ -132,46 +170,8 @@ function getSecretList() {
   api.getKeys(user.username).then(function (keys) {
     return user.decryptTitles(keys);
   }).then(function () {
-    user.titles.forEach(function (title) {
-      secretsList.appendChild(uiSecret(title));
+    Object.keys(user.titles).forEach(function (hash) {
+      secretsList.appendChild(uiSecret(hash, user.titles[hash]));
     });
   });
 }
-
-// var agix = new User('agix')
-// // var clearTitle  = 'my love'
-// // var clearSecret = 'la maman de jordan'
-
-// // var now = Date.now()
-
-// // api.getPublicKey('agix').then((publicKey) => {
-// //   return agix.importPublicKey(publicKey)
-// // }).then(() => {
-// //   return agix.encryptSecret(now+'|'+clearTitle, clearSecret)
-// // }).then((secret) => {
-// //   db.secrets[secret.title] = {secret: secret.secret, iv: secret.iv, users:[]}
-
-// //   agix.wrapKey(secret.key, agix.publicKey, agix.username).then((wrappedKey) => {
-// //     db.secrets[secret.title].users.push(wrappedKey.username)
-
-// //     agix.encryptTitle(now+'|'+clearTitle, agix.publicKey).then((encryptedTitle) => {
-// //       db.users[wrappedKey.username].keys[secret.title] = {title: encryptedTitle, key: wrappedKey.key, right: 3}
-
-// //       console.log(JSON.stringify(db))
-// //     })
-// //   })
-// // })
-
-// api.getWrappedPrivateKey(agix.username).then((wrappedPrivateKey) => {
-//   return agix.importPrivateKey('password', wrappedPrivateKey)
-// }).then(() => {
-//   return api.getKeys(agix.username)
-// }).then((keys) => {
-//   agix.decryptTitles(keys).then(() => {
-//     console.log(agix.titles)
-//     var encryptedSecret = api.getSecret(agix.titles[0].hash)
-//     return agix.decryptSecret(encryptedSecret, keys[agix.titles[0].hash].key)
-//   }).then((secret) => {
-//     console.log(secret)
-//   })
-// })

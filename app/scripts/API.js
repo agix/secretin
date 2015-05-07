@@ -32,7 +32,7 @@ API.prototype.addUser = function(username, privateKey, publicKey){
 }
 
 API.prototype.addSecret = function(creator, wrappedKey, iv, encryptedTitle, title, secret){
-  if(typeof this.db.secrets[title] === 'undefined'){
+  if(typeof this.db.secrets[title] === 'undefined' || typeof this.db.users[creator] === 'undefined'){
     this.db.secrets[title] = {secret: secret, iv: iv, users: [creator]}
     this.db.users[creator].keys[title] = {title: encryptedTitle, key: wrappedKey, right: 2}
     return true;
@@ -40,6 +40,32 @@ API.prototype.addSecret = function(creator, wrappedKey, iv, encryptedTitle, titl
   else{
     return false;
   }
+}
+
+
+//Should find a way to authenticate the owner
+API.prototype.shareKey = function(ownerName, friend, wrappedKey, encryptedTitle, title, right){
+  return new Promise((resolve, reject) => {
+    SHA256(ownerName).then((ownerNameHash) => {
+      var ownerNameHashHex = bytesToHexString(ownerNameHash)
+      if(typeof this.db.users[ownerNameHashHex] === 'undefined'){
+        reject('Owner doesn\'t exist')
+      }else if(typeof this.db.users[ownerNameHashHex].keys[title] === 'undefined' || this.db.users[ownerNameHashHex].keys[title].right < 2){
+        reject('You don\'t have right to share this secret')
+      }
+      else if(typeof this.db.secrets[title] === 'undefined'){
+        reject('Secret doesn\'t exist')
+      }
+      else if(typeof this.db.users[friend] === 'undefined'){
+        reject('Friend doesn\'t exist')
+      }
+      else{
+        this.db.secrets[title].users.push(friend)
+        this.db.users[friend].keys[title] = {title: encryptedTitle, key: wrappedKey, right: right}
+        resolve()
+      }
+    })
+  })
 }
 
 API.prototype.retrieveUser = function(username){

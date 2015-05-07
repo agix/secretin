@@ -49,5 +49,5 @@ function unwrapRSAOAEP(wrappedKeyHex, privateKey) {
   var wrappedAlgorithm = { name: 'AES-CBC', length: 256 };
   var usages = ['decrypt', 'encrypt'];
   var wrappedKey = hexStringToUint8Array(wrappedKeyHex);
-  return crypto.subtle.unwrapKey('raw', wrappedKey, privateKey, wrappingAlgorithm, wrappedAlgorithm, false, usages);
+  return crypto.subtle.unwrapKey('raw', wrappedKey, privateKey, wrappingAlgorithm, wrappedAlgorithm, true, usages);
 }

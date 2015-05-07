@@ -2,7 +2,7 @@ var User = function(username) {
   this.username   = username
   this.publicKey  = null
   this.privateKey = null
-  this.titles     = []
+  this.titles     = {}
 };
 
 User.prototype.generateMasterKey = function(){
@@ -79,10 +79,10 @@ User.prototype.decryptTitles = function(keys){
   return new Promise((resolve, reject) => {
     var hashes = Object.keys(keys)
     hashes.forEach((hash) => {
-      this.titles = []
+      this.titles = {}
       decryptRSAOAEP(keys[hash].title, this.privateKey).then((title) => {
-        this.titles.push({hash: hash, clear: bytesToASCIIString(title)})
-        if(this.titles.length === hashes.length){
+        this.titles[hash] = bytesToASCIIString(title)
+        if(Object.keys(this.titles).length === hashes.length){
           resolve()
         }
       })
