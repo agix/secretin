@@ -12,6 +12,7 @@
     "gulp-build": "^0.5.3",
     "gulp-mocha": "^2.0.1",
     "gulp-open": "^0.3.2",
+    "gulp-uglify": "^1.2.0",
     "gulp-util": "^3.0.4"
   },
   "scripts": {

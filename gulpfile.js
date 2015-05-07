@@ -3,6 +3,7 @@ var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var babel = require('gulp-babel');
 var build = require('gulp-build');
+var uglify = require('gulp-uglify');
 
 gulp.task('mocha', function() {
   return gulp.src(['test/*.js'], { read: false })
@@ -13,6 +14,7 @@ gulp.task('mocha', function() {
 gulp.task('babel', function() {
   return gulp.src('app/scripts/**')
     .pipe(babel())
+    //.pipe(uglify())
     .pipe(gulp.dest('dist/scripts'));
 });
 

@@ -155,8 +155,9 @@ api.getWrappedPrivateKey(agix.username).then((wrappedPrivateKey) => {
 }).then((keys) => {
   agix.decryptTitles(keys).then(() => {
     console.log(agix.titles)
-    var encryptedSecret = api.getSecret(agix.titles[0].hash)
-    return agix.decryptSecret(encryptedSecret, keys[agix.titles[0].hash].key)
+    var hash = Object.keys(agix.titles)[0]
+    var encryptedSecret = api.getSecret(hash)
+    return agix.decryptSecret(encryptedSecret, keys[hash].key)
   }).then((secret) => {
     console.log(secret)
   })
