@@ -112,10 +112,12 @@ API.prototype.getKeys = function(username){
 }
 
 API.prototype.getSecret = function(hash){
-  if(typeof this.db.secrets[hash] === 'undefined'){
-    throw('Invalid secret')
-  }
-  else{
-    return this.db.secrets[hash]
-  }
+  return new Promise((resolve, reject) => {
+    if(typeof this.db.secrets[hash] === 'undefined'){
+      reject('Invalid secret')
+    }
+    else{
+      resolve(this.db.secrets[hash])
+    }
+  })
 }

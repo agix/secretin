@@ -120,9 +120,13 @@ API.prototype.getKeys = function (username) {
 };
 
 API.prototype.getSecret = function (hash) {
-  if (typeof this.db.secrets[hash] === "undefined") {
-    throw "Invalid secret";
-  } else {
-    return this.db.secrets[hash];
-  }
+  var _this8 = this;
+
+  return new Promise(function (resolve, reject) {
+    if (typeof _this8.db.secrets[hash] === "undefined") {
+      reject("Invalid secret");
+    } else {
+      resolve(_this8.db.secrets[hash]);
+    }
+  });
 };

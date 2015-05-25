@@ -7,7 +7,7 @@ function genRSAOAEP(){
     name: 'RSA-OAEP',
     modulusLength: 4096,
     publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-    hash: {name: 'sha-256'}
+    hash: {name: 'SHA-256'}
   }
   return crypto.subtle.generateKey(rsaOaep, true, ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt'])
 }
@@ -31,19 +31,19 @@ function decryptAESCBC256(secret, key){
 }
 
 function encryptRSAOAEP(secret, publicKey){
-  return crypto.subtle.encrypt({name: "RSA-OAEP", hash: "sha-256"}, publicKey, asciiToUint8Array(secret))
+  return crypto.subtle.encrypt({name: "RSA-OAEP", hash: {name: 'SHA-256'}}, publicKey, asciiToUint8Array(secret))
 }
 
 function decryptRSAOAEP(secret, privateKey){
-  return crypto.subtle.decrypt({name: "RSA-OAEP", hash: "sha-256"}, privateKey, hexStringToUint8Array(secret))
+  return crypto.subtle.decrypt({name: "RSA-OAEP", hash: {name: 'SHA-256'}}, privateKey, hexStringToUint8Array(secret))
 }
 
 function wrapRSAOAEP(key, publicKey){
-  return crypto.subtle.wrapKey("raw", key, publicKey, {name: "RSA-OAEP", hash: "sha-256"})
+  return crypto.subtle.wrapKey("raw", key, publicKey, {name: "RSA-OAEP", hash: {name: 'SHA-256'}})
 }
 
 function unwrapRSAOAEP(wrappedKeyHex, privateKey){
-  var wrappingAlgorithm = {name: "RSA-OAEP", hash: "sha-256"}
+  var wrappingAlgorithm = {name: "RSA-OAEP", hash: {name: 'SHA-256'}}
   var wrappedAlgorithm  = {name: 'AES-CBC', length: 256}
   var usages = ['decrypt', 'encrypt']
   var wrappedKey = hexStringToUint8Array(wrappedKeyHex)

@@ -3,7 +3,25 @@ var User = function(username) {
   this.publicKey  = null
   this.privateKey = null
   this.titles     = {}
+  this.challenge  = {challenge: '', time: 0}
 };
+
+User.prototype.isChallengeValid = function(){
+  return (this.challenge.time > Date.now-10)
+}
+
+User.prototype.getToken = function(api){
+  if(this.isChallengeValid()){
+    return decryptRSAOAEP(this.challenge.challenge, this.privateKey)
+  }
+  else{
+    return api.getNewChallenge(this.username).then((challenge) => {
+      this.challenge = challenge
+      return decryptRSAOAEP(this.challenge.challenge, this.privateKey)
+    })
+  }
+
+}
 
 User.prototype.generateMasterKey = function(){
     return new Promise((resolve, reject) => {
@@ -86,6 +104,22 @@ User.prototype.decryptTitles = function(keys){
           resolve()
         }
       })
+    })
+  })
+}
+
+User.prototype.shareSecret = function(friend, wrappedKey, hashTitle){
+  return new Promise((resolve, reject) => {
+    var result = {};
+    this.unwrapKey(wrappedKey).then((key) => {
+      return this.wrapKey(key, friend.publicKey, friend.username)
+    }).then((rFriendWrappedKey) => {
+      result.hashedFriendName = rFriendWrappedKey.username
+      result.friendWrappedKey = rFriendWrappedKey.key
+      return this.encryptTitle(this.titles[hashTitle], friend.publicKey)
+    }).then((encryptedTitle) => {
+      result.encryptedTitle = encryptedTitle
+      resolve(result)
     })
   })
 }
