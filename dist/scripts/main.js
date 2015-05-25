@@ -124,11 +124,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var hash = e.path[1].children[0].textContent;
     var encryptedSecret;
     var friend;
+    var rights;
     var result = {};
     api.getSecret(hash).then(function (eSecret) {
       encryptedSecret = eSecret;
       var friendName = prompt('Which friend ?');
-      var rights = prompt('Which rights (0=read, 1=+write, 2=+share) ?');
+      rights = prompt('Which rights (0=read, 1=+write, 2=+share) ?');
       friend = new User(friendName);
       e.target.disabled = true;
       return api.getPublicKey(friend.username);
