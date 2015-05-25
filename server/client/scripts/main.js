@@ -93,6 +93,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  var timeout;
+
+  window.addEventListener('focus', function () {
+    clearInterval(timeout);
+  });
+
+  window.addEventListener('blur', function () {
+    timeout = setTimeout(function () {
+      destroyUser(user);
+    }, 30000);
+  });
+
+  document.getElementById('deco').addEventListener('click', function (e) {
+    destroyUser(user);
+  });
+
+  function destroyUser(user) {
+    var secretsList = document.getElementById('secretsList');
+    var oldElems = document.querySelectorAll('.secretElem');
+    for (var i = 0; i < oldElems.length; i++) {
+      secretsList.removeChild(oldElems[i]);
+    }
+    document.getElementById('currentUser').textContent = 'Not connected';
+    document.getElementById('secrets').style.display = 'none';
+    user.disconnect();
+  }
+
   function share(e) {
     var hash = e.path[1].children[0].textContent;
     var encryptedSecret;

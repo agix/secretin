@@ -6,6 +6,14 @@ var User = function(username) {
   this.challenge  = {challenge: '', time: 0}
 };
 
+User.prototype.disconnect = function(){
+  delete this.username
+  delete this.publicKey
+  delete this.privateKey
+  delete this.titles
+  delete this.challenge
+}
+
 User.prototype.isChallengeValid = function(){
   return (this.challenge.time > Date.now-10)
 }
