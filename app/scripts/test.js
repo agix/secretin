@@ -1,12 +1,12 @@
 var api  = new API(db)
 
-var invalidUsername = api.getWrappedPrivateKey('toto').then((wrappedPrivateKey) => {
+var invalidUsername = api.getWrappedPrivateKey('toto').then(function(wrappedPrivateKey){
   return wrappedPrivateKey
-}, (e) => {
+}, function(e){
   return e;
 })
 
-invalidUsername.then((ret) => {
+invalidUsername.then(function(ret){
   console.log('#getWrappedPrivateKey')
   console.log('Invalid username must return "Invalid username"')
   if(ret === 'Invalid username'){
@@ -18,13 +18,13 @@ invalidUsername.then((ret) => {
 })
 
 
-var validUsername = api.getWrappedPrivateKey('agix').then((wrappedPrivateKey) => {
+var validUsername = api.getWrappedPrivateKey('agix').then(function(wrappedPrivateKey){
   return wrappedPrivateKey
-}, (e) => {
+}, function(e){
   return e;
 })
 
-validUsername.then((ret) => {
+validUsername.then(function(ret){
   console.log('#getWrappedPrivateKey')
   console.log('Valid username must return object with iv and privateKey keys')
   if(JSON.stringify(Object.keys(ret)) === JSON.stringify(['iv', 'privateKey'])){
@@ -36,15 +36,15 @@ validUsername.then((ret) => {
 })
 
 
-var validUsernameButPassword = api.getWrappedPrivateKey('agix').then((wrappedPrivateKey) => {
+var validUsernameButPassword = api.getWrappedPrivateKey('agix').then(function(wrappedPrivateKey){
   return new User('agix').importPrivateKey('invalidpassword', wrappedPrivateKey)
-}).then(() => {
+}).then(function(){
   return 'Valid password'
-}, (e) => {
+}, function(e){
   return e;
 })
 
-validUsernameButPassword.then((ret) => {
+validUsernameButPassword.then(function(ret){
   console.log('#importPrivateKey')
   console.log('Valid username but password must return "Invalid password"')
   if(ret === 'Invalid password'){
@@ -56,15 +56,15 @@ validUsernameButPassword.then((ret) => {
 })
 
 
-var validUsernameAndPassword = api.getWrappedPrivateKey('agix').then((wrappedPrivateKey) => {
+var validUsernameAndPassword = api.getWrappedPrivateKey('agix').then(function(wrappedPrivateKey){
   return new User('agix').importPrivateKey('password', wrappedPrivateKey)
-}).then(() => {
+}).then(function(){
   return 'Valid password'
-}, (e) => {
+}, function(e){
   return e;
 })
 
-validUsernameAndPassword.then((ret) => {
+validUsernameAndPassword.then(function(ret){
   console.log('#importPrivateKey')
   console.log('Valid username and password must return "Valid password"')
   if(ret === 'Valid password'){
@@ -77,13 +77,13 @@ validUsernameAndPassword.then((ret) => {
 
 
 
-var invalidUsername = api.getPublicKey('toto').then((publicKey) => {
+var invalidUsername = api.getPublicKey('toto').then(function(publicKey){
   return publicKey
-}, (e) => {
+}, function(e){
   return e;
 })
 
-invalidUsername.then((ret) => {
+invalidUsername.then(function(ret){
   console.log('#getPublicKey')
   console.log('Invalid username must return "Invalid username"')
   if(ret === 'Invalid username'){
@@ -95,13 +95,13 @@ invalidUsername.then((ret) => {
 })
 
 
-var validUsername = api.getPublicKey('agix').then((publicKey) => {
+var validUsername = api.getPublicKey('agix').then(function(publicKey){
   return publicKey
-}, (e) => {
+}, function(e){
   return e;
 })
 
-validUsername.then((ret) => {
+validUsername.then(function(ret){
   console.log('#getPublicKey')
   console.log('Valid username must return object with iv and privateKey keys')
   if(JSON.stringify(Object.keys(ret)) === JSON.stringify(['alg', 'e', 'ext', 'key_ops', 'kty', 'n'])){
@@ -113,11 +113,11 @@ validUsername.then((ret) => {
 })
 
 
-// agix.generateMasterKey().then(() => {
-//   agix.exportPrivateKey('password').then((privateKey) => {
+// agix.generateMasterKey().then(function() {
+//   agix.exportPrivateKey('password').then(function(privateKey){
 //     console.log(JSON.stringify(privateKey))
 //   })
-//   agix.exportPublicKey().then((publicKey) => {
+//   agix.exportPublicKey().then(function(publicKey){
 //     console.log(JSON.stringify(publicKey))
 //   })
 // })
@@ -129,17 +129,17 @@ var agix = new User('agix')
 
 // var now = Date.now()
 
-// api.getPublicKey('agix').then((publicKey) => {
+// api.getPublicKey('agix').then(function(publicKey){
 //   return agix.importPublicKey(publicKey)
-// }).then(() => {
+// }).then(function(){
 //   return agix.encryptSecret(now+'|'+clearTitle, clearSecret)
-// }).then((secret) => {
+// }).then(function(secret){
 //   db.secrets[secret.title] = {secret: secret.secret, iv: secret.iv, users:[]}
 
-//   agix.wrapKey(secret.key, agix.publicKey, agix.username).then((wrappedKey) => {
+//   agix.wrapKey(secret.key, agix.publicKey, agix.username).then(function(wrappedKey){
 //     db.secrets[secret.title].users.push(wrappedKey.username)
 
-//     agix.encryptTitle(now+'|'+clearTitle, agix.publicKey).then((encryptedTitle) => {
+//     agix.encryptTitle(now+'|'+clearTitle, agix.publicKey).then(function(encryptedTitle){
 //       db.users[wrappedKey.username].keys[secret.title] = {title: encryptedTitle, key: wrappedKey.key, right: 3}
 
 //       console.log(JSON.stringify(db))
@@ -148,17 +148,17 @@ var agix = new User('agix')
 // })
 
 
-api.getWrappedPrivateKey(agix.username).then((wrappedPrivateKey) => {
+api.getWrappedPrivateKey(agix.username).then(function(wrappedPrivateKey){
   return agix.importPrivateKey('password', wrappedPrivateKey)
-}).then(() => {
+}).then(function(){
   return api.getKeys(agix.username)
-}).then((keys) => {
-  agix.decryptTitles(keys).then(() => {
+}).then(function(keys) {
+  agix.decryptTitles(keys).then(function(){
     console.log(agix.titles)
     var hash = Object.keys(agix.titles)[0]
     var encryptedSecret = api.getSecret(hash)
     return agix.decryptSecret(encryptedSecret, keys[hash].key)
-  }).then((secret) => {
+  }).then(function(secret){
     console.log(secret)
   })
 })

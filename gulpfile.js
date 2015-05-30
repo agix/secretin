@@ -1,62 +1,60 @@
 var gulp  = require('gulp');
-var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
-var babel = require('gulp-babel');
 var build = require('gulp-build');
 var uglify = require('gulp-uglify');
-var rename = require("gulp-rename");
+var rename = require('gulp-rename');
+var jshint = require('gulp-jshint');
 
-gulp.task('mocha', function() {
-  return gulp.src(['test/*.js'], { read: false })
-      .pipe(mocha({ compilers: 'js:babel/register', reporter: 'list' }))
-      .on('error', gutil.log);
-});
-
-gulp.task('babel', function() {
-  return gulp.src('app/scripts/**')
-    .pipe(babel())
-    //.pipe(uglify())
-    .pipe(gulp.dest('dist/scripts'));
-});
-
-gulp.task('babelserv', function() {
+gulp.task('buildLocal', function() {
+  gulp.src('app/index.html')
+    .pipe(build())
+    .pipe(gulp.dest('dist'))
   gulp.src('app/scripts/main.js')
-    .pipe(babel())
-    //.pipe(uglify())
+    .pipe(gulp.dest('dist/scripts'));
+  gulp.src('app/scripts/User.js')
+    .pipe(gulp.dest('dist/scripts'));
+  gulp.src('app/scripts/API.js')
+    .pipe(gulp.dest('dist/scripts'));
+  gulp.src('app/scripts/lib/**')
+    .pipe(gulp.dest('dist/scripts/lib'));
+});
+
+
+gulp.task('buildServ', function() {
+  gulp.src('app/indexServ.html')
+    .pipe(build())
+    .pipe(rename('index.html'))
+    .pipe(gulp.dest('server/client'))
+
+  gulp.src('app/scripts/mainServ.js')
+    .pipe(rename('main.js'))
     .pipe(gulp.dest('server/client/scripts'));
   gulp.src('app/scripts/User.js')
-    .pipe(babel())
-    //.pipe(uglify())
     .pipe(gulp.dest('server/client/scripts'));
-  gulp.src('app/scripts/APIserv.js')
-    .pipe(babel())
-    //.pipe(uglify())
-    .pipe(rename("API.js"))
+  gulp.src('app/scripts/APIServ.js')
+    .pipe(rename('API.js'))
     .pipe(gulp.dest('server/client/scripts'));
   gulp.src('app/scripts/lib/**')
-    .pipe(babel())
-    //.pipe(uglify())
     .pipe(gulp.dest('server/client/scripts/lib'));
 });
 
-gulp.task('build', function() {
-  return gulp.src('app/*.html')
-      .pipe(build())
-      .pipe(gulp.dest('dist'))
-});
-
-
-gulp.task('buildserv', function() {
-  return gulp.src('app/indexServ.html')
-      .pipe(build())
-      .pipe(rename('index.html'))
-      .pipe(gulp.dest('server/client'))
-});
-
 gulp.task('watch', function() {
-  gulp.watch(['app/scripts/**'], ['mocha', 'babel', 'babelserv']);
-  gulp.watch(['test/**'], ['mocha']);
-  gulp.watch(['app/*.html'], ['build', 'buildserv']);
+  gulp.watch(['app/scripts/**'], ['buildLocal', 'buildServ']);
+  gulp.watch(['app/*.html'], ['buildLocal', 'buildServ']);
 });
 
-gulp.task('default', ['mocha', 'babel', 'babelserv', 'build', 'buildserv', 'watch']);
+gulp.task('default', ['buildLocal', 'buildServ', 'watch']);
+
+gulp.task('jshint', function() {
+  gulp.src('app/scripts/APIServ.js')
+    .pipe(jshint())
+    .pipe(jshint.reporter('default'));
+
+  gulp.src('app/scripts/User.js')
+    .pipe(jshint())
+    .pipe(jshint.reporter('default'));
+
+  gulp.src('app/scripts/lib/**')
+    .pipe(jshint())
+    .pipe(jshint.reporter('default'));
+});

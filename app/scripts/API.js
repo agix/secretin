@@ -8,18 +8,18 @@ var API = function(link) {
 };
 
 API.prototype.userExists = function(username){
-  return new Promise((resolve, reject) => {
-    this.retrieveUser(username).then((user) => {
+  return new Promise(function(resolve, reject){
+    this.retrieveUser(username).then(function(user){
       resolve(true);
-    }, (e) => {
+    }, function(e){
       resolve(false);
     })
   })
 }
 
 API.prototype.addUser = function(username, privateKey, publicKey){
-  return new Promise((resolve, reject) => {
-    SHA256(username).then((usernameHash) => {
+  return new Promise(function(resolve, reject){
+    SHA256(username).then(function(usernameHash){
       if(typeof this.db.users[bytesToHexString(usernameHash)] === 'undefined'){
         this.db.users[bytesToHexString(usernameHash)] = {privateKey: privateKey, publicKey: publicKey, keys: {}};
         resolve()
@@ -45,8 +45,8 @@ API.prototype.addSecret = function(creator, wrappedKey, iv, encryptedTitle, titl
 
 //Should find a way to authenticate the owner
 API.prototype.shareKey = function(ownerName, friend, wrappedKey, encryptedTitle, title, right){
-  return new Promise((resolve, reject) => {
-    SHA256(ownerName).then((ownerNameHash) => {
+  return new Promise(function(resolve, reject){
+    SHA256(ownerName).then(function(ownerNameHash){
       var ownerNameHashHex = bytesToHexString(ownerNameHash)
       if(typeof this.db.users[ownerNameHashHex] === 'undefined'){
         reject('Owner doesn\'t exist')
@@ -69,8 +69,8 @@ API.prototype.shareKey = function(ownerName, friend, wrappedKey, encryptedTitle,
 }
 
 API.prototype.retrieveUser = function(username){
-  return new Promise((resolve, reject) => {
-    SHA256(username).then((usernameHash) => {
+  return new Promise(function(resolve, reject){
+    SHA256(username).then(function(usernameHash){
       if(typeof this.db.users[bytesToHexString(usernameHash)] === 'undefined'){
         reject('Invalid username')
       }
@@ -82,37 +82,37 @@ API.prototype.retrieveUser = function(username){
 }
 
 API.prototype.getWrappedPrivateKey = function(username){
-  return new Promise((resolve, reject) => {
-    this.retrieveUser(username).then((user) => {
+  return new Promise(function(resolve, reject){
+    this.retrieveUser(username).then(function(user){
       resolve(user.privateKey)
-    }, (e) => {
+    }, function(e){
       reject(e)
     })
   })
 }
 
 API.prototype.getPublicKey = function(username){
-  return new Promise((resolve, reject) => {
-    this.retrieveUser(username).then((user) => {
+  return new Promise(function(resolve, reject){
+    this.retrieveUser(username).then(function(user){
       resolve(user.publicKey)
-    }, (e) => {
+    }, function(e){
       reject(e)
     })
   })
 }
 
 API.prototype.getKeys = function(username){
-  return new Promise((resolve, reject) => {
-    this.retrieveUser(username).then((user) => {
+  return new Promise(function(resolve, reject){
+    this.retrieveUser(username).then(function(user){
       resolve(user.keys)
-    }, (e) => {
+    }, function(e){
       reject(e)
     })
   })
 }
 
 API.prototype.getSecret = function(hash){
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject){
     if(typeof this.db.secrets[hash] === 'undefined'){
       reject('Invalid secret')
     }

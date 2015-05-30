@@ -39,12 +39,10 @@ document.getElementById('newUser').addEventListener('click', function(e) {
             document.getElementById('newPassword').value = ''
             document.getElementById('currentUser').textContent = user.username;
             document.getElementById('secrets').style.display = '';
-            if(document.getElementById('db')){
-              document.getElementById('db').value = JSON.stringify(api.db)
-            }
-            getSecretList(user)
+            setTimeout(function(){ getSecretList(user); }, 1000);
           }, function(err){
             alert(err);
+            throw(err);
           })
         })
       })
@@ -72,7 +70,8 @@ document.getElementById('getKeys').addEventListener('click', function(e){
     document.getElementById('secrets').style.display = '';
     getSecretList(user)
   }, function(err){
-    alert(err)
+    alert(err);
+    throw(err);
   })
 
 })
@@ -81,7 +80,7 @@ document.getElementById('addSecret').addEventListener('click', function(e){
   var title = document.getElementById('secretTitle').value
   var content = document.getElementById('secretContent').value
   user.createSecret(title, content).then(function(secret){
-    return api.addSecret(secret.creator, secret.wrappedKey, secret.iv, secret.encryptedTitle, secret.hashTitle, secret.secret)
+    return api.addSecret(secret.creator, secret.wrappedKey, secret.iv, secret.encryptedTitle, secret.hashedTitle, secret.secret)
   }).then(function(msg){
     document.getElementById('secretTitle').value = ''
     document.getElementById('secretContent').value = ''
@@ -91,6 +90,7 @@ document.getElementById('addSecret').addEventListener('click', function(e){
     getSecretList(user)
   }, function(err){
     alert(err)
+    throw(err);
   })
 })
 
@@ -140,7 +140,7 @@ function share(e){
   }).then(function(keys){
     return user.shareSecret(friend, keys[hash].key, hash)
   }).then(function(result){
-    return api.shareSecret(user, result.hashedFriendName, result.friendWrappedKey, result.encryptedTitle, hash, rights)
+    return api.shareSecret(user, result.friendName, result.wrappedKey, result.encryptedTitle, hash, rights)
   }).then(function(){
     if(document.getElementById('db')){
       document.getElementById('db').value = JSON.stringify(api.db)
@@ -149,6 +149,7 @@ function share(e){
   }, function(err){
     e.target.disabled = false
     alert(err)
+    throw(err);
   })
 }
 

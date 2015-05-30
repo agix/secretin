@@ -144,7 +144,7 @@ app.post('/user/:name/:title', function (req, res) {
   });
 });
 
-app.get('/token/:name', function (req, res) {
+app.get('/challenge/:name', function (req, res) {
   userExists(req.params.name, function(exists, user){
     if(exists){
 
@@ -158,7 +158,7 @@ app.get('/token/:name', function (req, res) {
         md: forge.md.sha256.create()
       });
 
-      res.json({time: Date.now().toString(), challenge: new Buffer(encrypted, 'binary').toString('hex')});
+      res.json({time: Date.now().toString(), value: new Buffer(encrypted, 'binary').toString('hex')});
     }
     else{
       res.writeHead(404, 'User not found', {});
