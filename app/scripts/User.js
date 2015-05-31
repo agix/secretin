@@ -3,6 +3,7 @@ var User = function(username) {
   _this.username    = username;
   _this.publicKey   = null;
   _this.privateKey  = null;
+  _this.keys        = {};
   _this.titles      = {};
   _this.token       = {value: '', time: 0};
 };
@@ -146,13 +147,13 @@ User.prototype.wrapKey = function(key, publicKey){
   });
 };
 
-User.prototype.decryptTitles = function(secrets){
+User.prototype.decryptTitles = function(){
   var _this = this;
   return new Promise(function(resolve, reject){
-    var hashedTitles = Object.keys(secrets);
+    var hashedTitles = Object.keys(_this.keys);
     hashedTitles.forEach(function(hashedTitle){
       _this.titles = {};
-      decryptRSAOAEP(secrets[hashedTitle].title, _this.privateKey).then(function(title){
+      decryptRSAOAEP(_this.keys[hashedTitle].title, _this.privateKey).then(function(title){
         _this.titles[hashedTitle] = bytesToASCIIString(title);
         if(Object.keys(_this.titles).length === hashedTitles.length){
           resolve();

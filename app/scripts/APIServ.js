@@ -93,6 +93,13 @@ API.prototype.getKeys = function(username){
   });
 };
 
+API.prototype.getUser = function(username){
+  var _this = this;
+  return _this.retrieveUser(username).then(function(user){
+    return user;
+  });
+};
+
 API.prototype.getSecret = function(hash){
   var _this = this;
   return GET(_this.db+'/secret/'+hash);

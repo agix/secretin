@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
 
 var api = new API();
-var user;
+var currentUser;
 
 if(document.getElementById('db')){
   document.getElementById('db').addEventListener('change', function(e) {
@@ -27,19 +27,19 @@ document.getElementById('newUser').addEventListener('click', function(e) {
   var password = document.getElementById('newPassword').value
   api.userExists(username).then(function(exists){
     if(!exists){
-      user = new User(username)
+      currentUser = new User(username)
       document.getElementById('newUser').disabled = true
-      user.generateMasterKey().then(function(){
-        user.exportPrivateKey(password).then(function(privateKey){
-          user.exportPublicKey().then(function(publicKey){
+      currentUser.generateMasterKey().then(function(){
+        currentUser.exportPrivateKey(password).then(function(privateKey){
+          currentUser.exportPublicKey().then(function(publicKey){
             document.getElementById('newUser').disabled = false
-            return api.addUser(user.username, privateKey, publicKey)
+            return api.addUser(currentUser.username, privateKey, publicKey)
           }).then(function(msg){
             document.getElementById('newUsername').value = ''
             document.getElementById('newPassword').value = ''
-            document.getElementById('currentUser').textContent = user.username;
+            document.getElementById('currentUser').textContent = currentUser.username;
             document.getElementById('secrets').style.display = '';
-            setTimeout(function(){ getSecretList(user); }, 1000);
+            setTimeout(function(){ getSecretList(currentUser); }, 1000);
           }, function(err){
             alert(err);
             throw(err);
@@ -56,19 +56,20 @@ document.getElementById('newUser').addEventListener('click', function(e) {
 document.getElementById('getKeys').addEventListener('click', function(e){
   var username = document.getElementById('username').value
   var password = document.getElementById('password').value
-  api.getPublicKey(username).then(function(publicKey){
-    user = new User(username)
-    return user.importPublicKey(publicKey)
+  var remoteUser;
+  api.getUser(username).then(function(user){
+    currentUser = new User(username)
+    remoteUser = user;
+    currentUser.keys = remoteUser.keys;
+    return currentUser.importPublicKey(remoteUser.publicKey);
   }).then(function(){
-    return api.getWrappedPrivateKey(username)
-  }).then(function(wrappedPrivateKey){
-    return user.importPrivateKey(password, wrappedPrivateKey)
+    return currentUser.importPrivateKey(password, remoteUser.privateKey);
   }).then(function(){
     document.getElementById('username').value = ''
     document.getElementById('password').value = ''
-    document.getElementById('currentUser').textContent = user.username;
+    document.getElementById('currentUser').textContent = currentUser.username;
     document.getElementById('secrets').style.display = '';
-    getSecretList(user)
+    getSecretList(currentUser)
   }, function(err){
     alert(err);
     throw(err);
@@ -79,7 +80,7 @@ document.getElementById('getKeys').addEventListener('click', function(e){
 document.getElementById('addSecret').addEventListener('click', function(e){
   var title = document.getElementById('secretTitle').value
   var content = document.getElementById('secretContent').value
-  user.createSecret(title, content).then(function(secret){
+  currentUser.createSecret(title, content).then(function(secret){
     return api.addSecret(secret.creator, secret.wrappedKey, secret.iv, secret.encryptedTitle, secret.hashedTitle, secret.secret)
   }).then(function(msg){
     document.getElementById('secretTitle').value = ''
@@ -87,7 +88,7 @@ document.getElementById('addSecret').addEventListener('click', function(e){
     if(document.getElementById('db')){
       document.getElementById('db').value = JSON.stringify(api.db)
     }
-    getSecretList(user)
+    getSecretList(currentUser)
   }, function(err){
     alert(err)
     throw(err);
@@ -101,12 +102,12 @@ window.addEventListener('focus', function() {
 });
 
 window.addEventListener('blur', function() {
-  timeout = setTimeout(function() { destroyUser(user) }, 30000)
+  timeout = setTimeout(function() { destroyUser(currentUser) }, 30000)
 });
 
 
 document.getElementById('deco').addEventListener('click', function(e){
-  destroyUser(user);
+  destroyUser(currentUser);
 });
 
 function destroyUser(user){
@@ -136,11 +137,9 @@ function share(e){
   }).then(function(publicKey){
     return friend.importPublicKey(publicKey)
   }).then(function(){
-    return api.getKeys(user.username)
-  }).then(function(keys){
-    return user.shareSecret(friend, keys[hash].key, hash)
+    return currentUser.shareSecret(friend, currentUser.keys[hash].key, hash)
   }).then(function(result){
-    return api.shareSecret(user, result.friendName, result.wrappedKey, result.encryptedTitle, hash, rights)
+    return api.shareSecret(currentUser, result.friendName, result.wrappedKey, result.encryptedTitle, hash, rights)
   }).then(function(){
     if(document.getElementById('db')){
       document.getElementById('db').value = JSON.stringify(api.db)
@@ -161,9 +160,7 @@ function unHide(e){
     var encryptedSecret;
     api.getSecret(hash).then(function(eSecret){
       encryptedSecret = eSecret;
-      return api.getKeys(user.username)
-    }).then(function(keys){
-      return user.decryptSecret(encryptedSecret, keys[hash].key)
+      return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hash].key)
     }).then(function(secret){
       input.type  = 'text'
       input.value = secret
@@ -225,11 +222,9 @@ function getSecretList(){
   for (var i = 0; i < oldElems.length; i++) {
     secretsList.removeChild(oldElems[i])
   }
-  api.getKeys(user.username).then(function(keys){
-    return user.decryptTitles(keys)
-  }).then(function(){
-    Object.keys(user.titles).forEach(function(hash){
-      secretsList.appendChild(uiSecret(hash, user.titles[hash]))
+  currentUser.decryptTitles().then(function(){
+    Object.keys(currentUser.titles).forEach(function(hash){
+      secretsList.appendChild(uiSecret(hash, currentUser.titles[hash]))
     })
   })
 }

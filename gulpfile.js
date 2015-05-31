@@ -4,6 +4,8 @@ var build = require('gulp-build');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 var jshint = require('gulp-jshint');
+var tar = require('gulp-tar');
+var gzip = require('gulp-gzip');
 
 gulp.task('buildLocal', function() {
   gulp.src('app/index.html')
@@ -57,4 +59,11 @@ gulp.task('jshint', function() {
   gulp.src('app/scripts/lib/**')
     .pipe(jshint())
     .pipe(jshint.reporter('default'));
+});
+
+gulp.task('deploy', function() {
+  gulp.src(['server/clien*/**', 'server/index.js', 'server/install.js', 'server/package.json'])
+    .pipe(tar('secretin.tar'))
+    .pipe(gzip())
+    .pipe(gulp.dest('dist'));
 });
