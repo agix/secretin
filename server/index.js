@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
+var _ = require('lodash');
 var cradle = require('cradle');
 var db = new(cradle.Connection)().database('secretin');
 var forge = require('node-forge');
@@ -45,6 +46,29 @@ app.get('/user/:name', function (req, res) {
   userExists(req.params.name, function(exists, user){
     if(exists){
       res.json(user);
+    }
+    else{
+      res.writeHead(404, 'User not found', {});
+      res.end();
+    }
+  });
+});
+
+app.get('/database/:name', function (req, res) {
+  var db = {users : {}, secrets: {}};
+  userExists(req.params.name, function(exists, user){
+    if(exists){
+      db.users[req.params.name] = user;
+      var hashedTitles = Object.keys(user.keys);
+      hashedTitles.forEach(function(hashedTitle){
+        secretExists(hashedTitle, function(exists, secret){
+          db.secrets[hashedTitle] = secret;
+          db.secrets[hashedTitle].users = [req.params.name];
+          if(Object.keys(db.secrets).length === hashedTitles.length){
+            res.json(db);
+          }
+        });
+      });
     }
     else{
       res.writeHead(404, 'User not found', {});
@@ -167,6 +191,54 @@ app.get('/challenge/:name', function (req, res) {
   });
 });
 
+app.post('/edit/:name/:title', function (req, res) {
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      userExists(req.params.name, function(uExists, user, metaUser){
+        if(uExists){
+          secretExists(req.params.title, function(sExists, secret, metaSecret){
+            if(sExists){
+              if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 0){
+                var secretDoc = {secret: {}};
+                secretDoc.secret[req.params.title] = secret
+                secretDoc.secret[req.params.title].iv = req.body.iv;
+                secretDoc.secret[req.params.title].secret = req.body.secret;
+                db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
+                  if(err === null && ret.ok === true){
+                    res.writeHead(200, 'Secret updated', {});
+                    res.end();
+                  }
+                  else{
+                    console.log(err);
+                    res.writeHead(500, 'Unknown error', {});
+                    res.end();
+                  }
+                });
+              }
+              else{
+                res.writeHead(403, 'You can\'t edit this secret', {});
+                res.end();
+              }
+            }
+            else{
+              res.writeHead(404, 'Secret not found', {});
+              res.end();
+            }
+          });
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
+        }
+      });
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
+    }
+  });
+});
+
 app.post('/share/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -179,7 +251,8 @@ app.post('/share/:name/:title', function (req, res) {
                   if(sExists){
                     if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
                       var secretDoc = {secret: {}};
-                      secret.users.push(req.params.name)
+                      secret.users.push(req.body.friendName);
+                      secret.users = _.uniq(secret.users);
                       secretDoc.secret[req.params.title] = secret
 
                       fUser.keys[req.params.title] = {

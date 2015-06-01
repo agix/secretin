@@ -31,13 +31,13 @@ API.prototype.addUser = function(username, privateKey, publicKey){
   });
 };
 
-API.prototype.addSecret = function(username, wrappedKey, iv, encryptedTitle, title, secret){
+API.prototype.addSecret = function(secretObject){
   var _this = this;
-  return POST(_this.db+'/user/'+username+'/'+title,{
-    secret: secret,
-    iv: iv,
-    title: encryptedTitle,
-    key: wrappedKey
+  return POST(_this.db+'/user/'+secretObject.hashedUsername+'/'+secretObject.hashedTitle,{
+    secret: secretObject.secret,
+    iv: secretObject.iv,
+    title: secretObject.encryptedTitle,
+    key: secretObject.wrappedKey
   });
 };
 
@@ -48,17 +48,32 @@ API.prototype.getNewChallenge = function(username){
   });
 };
 
-API.prototype.shareSecret = function(user, friend, wrappedKey, encryptedTitle, title, rights){
+API.prototype.editSecret = function(user, secretObject, hashedTitle){
+  var _this = this;
+  var hashdeUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return POST(_this.db+'/edit/'+hashedUsername+'/'+hashedTitle,{
+      iv: secretObject.iv,
+      secret: secretObject.secret,
+      token: bytesToHexString(token)
+    });
+  });
+};
+
+API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, rights){
   var _this = this;
   var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
   }).then(function(token){
-    return POST(_this.db+'/share/'+hashedUsername+'/'+title,{
-      friendName: friend,
-      title: encryptedTitle,
-      key: wrappedKey,
+    return POST(_this.db+'/share/'+hashedUsername+'/'+hashedTitle,{
+      friendName: sharedSecretObject.friendName,
+      title: sharedSecretObject.encryptedTitle,
+      key: sharedSecretObject.wrappedKey,
       rights: rights,
       token: bytesToHexString(token)
     });
@@ -100,7 +115,14 @@ API.prototype.getUser = function(username){
   });
 };
 
-API.prototype.getSecret = function(hash){
+API.prototype.getSecret = function(hashedTitle){
   var _this = this;
-  return GET(_this.db+'/secret/'+hash);
+  return GET(_this.db+'/secret/'+hashedTitle);
+};
+
+API.prototype.getDb = function(username){
+  var _this = this;
+  return SHA256(username).then(function(hashedUsername){
+    return GET(_this.db+'/database/'+bytesToHexString(hashedUsername));
+  });
 };

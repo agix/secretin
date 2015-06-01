@@ -12,6 +12,7 @@
     "body-parser": "^1.12.4",
     "cradle": "^0.6.9",
     "express": "^4.12.4",
+    "lodash": "^3.9.3",
     "node-forge": "^0.6.29",
     "redis": "^0.12.1"
   }

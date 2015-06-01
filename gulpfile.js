@@ -59,6 +59,10 @@ gulp.task('jshint', function() {
   gulp.src('app/scripts/lib/**')
     .pipe(jshint())
     .pipe(jshint.reporter('default'));
+
+  gulp.src('app/scripts/mainServ.js')
+    .pipe(jshint())
+    .pipe(jshint.reporter('default'));
 });
 
 gulp.task('deploy', function() {

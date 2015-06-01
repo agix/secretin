@@ -46,7 +46,7 @@ User.prototype.generateMasterKey = function(){
 
 User.prototype.exportPublicKey = function(){
   var _this = this;
-  return exportPublicKey(_this.publicKey)
+  return exportPublicKey(_this.publicKey);
 };
 
 User.prototype.importPublicKey = function(jwkPublicKey){
@@ -62,7 +62,7 @@ User.prototype.exportPrivateKey = function(password){
     return {
       privateKey: bytesToHexString(privateKeyObject.privateKey),
       iv: bytesToHexString(privateKeyObject.iv)
-    }
+    };
   });
 };
 
@@ -97,6 +97,18 @@ User.prototype.shareSecret = function(friend, wrappedKey, hashedTitle){
   });
 };
 
+User.prototype.editSecret = function(secret, wrappedKey){
+  var _this = this;
+  var result = {};
+  return _this.unwrapKey(wrappedKey).then(function(key){
+    return encryptAESCBC256(secret, key);
+  }).then(function(secretObject){
+    result.secret = bytesToHexString(secretObject.secret);
+    result.iv = bytesToHexString(secretObject.iv);
+    return result;
+  });
+}
+
 User.prototype.createSecret = function(title, secret){
   var _this = this;
   var now = Date.now();
@@ -113,7 +125,7 @@ User.prototype.createSecret = function(title, secret){
     result.encryptedTitle = encryptedTitle;
     return SHA256(_this.username);
   }).then(function(hashedUsername){
-    result.creator = bytesToHexString(hashedUsername);
+    result.hashedUsername = bytesToHexString(hashedUsername);
     return SHA256(saltedTitle);
   }).then(function(hashedTitle){
     result.hashedTitle = bytesToHexString(hashedTitle);

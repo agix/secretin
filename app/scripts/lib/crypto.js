@@ -21,17 +21,34 @@ function genRSAOAEP(){
   return crypto.subtle.generateKey(algorithm, extractable, keyUsages);
 }
 
-function encryptAESCBC256(secret){
+function encryptAESCBC256(secret, key){
   var result = {};
-  var algorithm = {
-    name: 'AES-CBC',
-    length: 256
-  };
-  var extractable = true;
-  var keyUsages = [
-    'encrypt'
-  ];
-  return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
+  if(typeof key === 'undefined'){
+    var algorithm = {
+      name: 'AES-CBC',
+      length: 256
+    };
+    var extractable = true;
+    var keyUsages = [
+      'encrypt'
+    ];
+    return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
+      var iv = new Uint8Array(16);
+      crypto.getRandomValues(iv);
+      var algorithm = {
+        name: 'AES-CBC',
+        iv: iv
+      };
+      var data = asciiToUint8Array(secret);
+      result.key = key;
+      result.iv = iv;
+      return crypto.subtle.encrypt(algorithm, key, data);
+    }).then(function(encryptedSecret){
+      result.secret = encryptedSecret;
+      return result;
+    });
+  }
+  else{
     var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
     var algorithm = {
@@ -39,13 +56,12 @@ function encryptAESCBC256(secret){
       iv: iv
     };
     var data = asciiToUint8Array(secret);
-    result.key = key;
     result.iv = iv;
-    return crypto.subtle.encrypt(algorithm, key, data);
-  }).then(function(encryptedSecret){
-    result.secret = encryptedSecret;
-    return result;
-  });
+    return crypto.subtle.encrypt(algorithm, key, data).then(function(encryptedSecret){
+      result.secret = encryptedSecret;
+      return result;
+    });
+  }
 }
 
 function decryptAESCBC256(secretObject, key){
@@ -133,7 +149,7 @@ function convertToKey(password){
       'unwrapKey'
     ];
     return crypto.subtle.importKey(format, key, algorithm, extractable, keyUsages);
-  })
+  });
 }
 
 function exportPrivateKey(password, privateKey){
