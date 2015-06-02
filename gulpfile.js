@@ -80,4 +80,9 @@ gulp.task('deploy', function() {
     .pipe(tar('secretin.tar'))
     .pipe(gzip())
     .pipe(gulp.dest('dist'));
+
+  gulp.src('server/client/alon*/**')
+    .pipe(tar('secretinAlone.tar'))
+    .pipe(gzip())
+    .pipe(gulp.dest('server/client'));
 });
