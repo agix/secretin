@@ -28,7 +28,7 @@ User.prototype.getToken = function(api){
     return _this.token.value;
   }
   else{
-    return api.getNewChallenge(_this.username).then(function(challenge){
+    return api.getNewChallenge(_this).then(function(challenge){
       _this.token.time  = challenge.time;
       _this.token.value = decryptRSAOAEP(challenge.value, _this.privateKey);
       return _this.token.value;

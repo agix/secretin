@@ -41,9 +41,23 @@ API.prototype.addSecret = function(secretObject){
   });
 };
 
-API.prototype.getNewChallenge = function(username){
+API.prototype.deleteSecret = function(user, hashedTitle){
   var _this = this;
-  return SHA256(username).then(function(hashedUsername){
+  var hashdeUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return DELETE(_this.db+'/user/'+hashedUsername+'/'+hashedTitle, {
+      token: bytesToHexString(token)
+    });
+  });
+};
+
+
+API.prototype.getNewChallenge = function(user){
+  var _this = this;
+  return SHA256(user.username).then(function(hashedUsername){
     return GET(_this.db+'/challenge/'+bytesToHexString(hashedUsername));
   });
 };

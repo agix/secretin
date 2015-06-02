@@ -3,12 +3,10 @@ document.addEventListener("DOMContentLoaded", function() {
 var api = new API();
 var currentUser;
 
-if(document.getElementById('dbUri')){
-  document.getElementById('dbUri').addEventListener('change', function(e) {
-    var db = e.target.value;
-    api = new API(db);
-  });
-}
+document.getElementById('dbUri').addEventListener('change', function(e) {
+  var db = e.target.value;
+  api = new API(db);
+});
 
 document.getElementById('getDb').addEventListener('click', function(e) {
   if(typeof currentUser !== 'undefined' && typeof currentUser.username !== 'undefined'){
@@ -207,7 +205,23 @@ function editSecret(e){
       throw(err);
     });
   }
+}
 
+function deleteSecret(e){
+  var title       = e.path[1].children[1].textContent;
+  var hashedTitle = e.path[1].children[0].textContent;
+  var sure = confirm('Are you sure to delete ' + title + '?');
+  if(sure){
+    api.deleteSecret(currentUser, hashedTitle).then(function(){
+      return api.getKeys(currentUser.username);
+    }).then(function(keys){
+      currentUser.keys = keys;
+      getSecretList(currentUser);
+    }, function(err){
+      alert(err);
+      throw(err);
+    });
+  }
 }
 
 function uiSecret(hashedTitle, title){
@@ -233,6 +247,11 @@ function uiSecret(hashedTitle, title){
   editBtn.value = 'Edit';
   editBtn.addEventListener('click', editSecret);
 
+  var deleteBtn = document.createElement('input');
+  deleteBtn.type = 'button';
+  deleteBtn.value = 'Delete';
+  deleteBtn.addEventListener('click', deleteSecret);
+
   var titleSpan = document.createElement('span');
   titleSpan.textContent = title.substring(14);
 
@@ -245,6 +264,7 @@ function uiSecret(hashedTitle, title){
   elem.appendChild(btn);
   elem.appendChild(editBtn);
   elem.appendChild(shareBtn);
+  elem.appendChild(deleteBtn);
   return elem;
 }
 

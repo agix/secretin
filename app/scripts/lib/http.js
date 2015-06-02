@@ -31,3 +31,20 @@ function POST(path, datas){
     xhr.send(JSON.stringify(datas));
   });
 }
+
+function DELETE(path, datas){
+  return new Promise(function(resolve, reject){
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', encodeURI(path));
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        resolve(xhr.statusText);
+      }
+      else{
+        reject(xhr.statusText);
+      }
+    };
+    xhr.send(JSON.stringify(datas));
+  });
+}

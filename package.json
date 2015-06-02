@@ -9,6 +9,7 @@
   "devDependencies": {
     "gulp": "^3.8.11",
     "gulp-build": "^0.5.3",
+    "gulp-concat": "^2.5.2",
     "gulp-gzip": "^1.1.0",
     "gulp-jshint": "^1.11.0",
     "gulp-open": "^0.3.2",

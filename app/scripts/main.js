@@ -1,236 +1,265 @@
 document.addEventListener("DOMContentLoaded", function() {
 
 var api = new API();
-var user;
-
-if(document.getElementById('db')){
-  document.getElementById('db').addEventListener('change', function(e) {
-    try{
-      var db = JSON.parse(e.target.value)
-      api = new API(db);
-    }
-    catch (e){
-      console.log('Invalid JSON : ' + e.message)
-    }
-  });
-}
-
-if(document.getElementById('dbUri')){
-  document.getElementById('dbUri').addEventListener('change', function(e) {
-    var db = e.target.value
-    api = new API(db);
-  });
-}
+var currentUser;
 
 document.getElementById('newUser').addEventListener('click', function(e) {
-  var username = document.getElementById('newUsername').value
-  var password = document.getElementById('newPassword').value
+  var username = document.getElementById('newUsername').value;
+  var password = document.getElementById('newPassword').value;
   api.userExists(username).then(function(exists){
     if(!exists){
-      user = new User(username)
-      document.getElementById('newUser').disabled = true
-      user.generateMasterKey().then(function(){
-        user.exportPrivateKey(password).then(function(privateKey){
-          user.exportPublicKey().then(function(publicKey){
-            document.getElementById('newUser').disabled = false
-            return api.addUser(user.username, privateKey, publicKey)
-          }).then(function(msg){
-            document.getElementById('newUsername').value = ''
-            document.getElementById('newPassword').value = ''
-            document.getElementById('currentUser').textContent = user.username;
-            document.getElementById('secrets').style.display = '';
-            if(document.getElementById('db')){
-              document.getElementById('db').value = JSON.stringify(api.db)
-            }
-            getSecretList(user)
-          }, function(err){
-            alert(err);
-          })
-        })
-      })
+      var result = {};
+      currentUser = new User(username);
+      document.getElementById('newUser').disabled = true;
+      currentUser.generateMasterKey().then(function(){
+        return currentUser.exportPrivateKey(password);
+      }).then(function(privateKey){
+        result.privateKey = privateKey;
+        return currentUser.exportPublicKey();
+      }).then(function(publicKey){
+        result.publicKey = publicKey;
+        return api.addUser(currentUser.username, result.privateKey, result.publicKey);
+      }).then(function(msg){
+        document.getElementById('newUser').disabled = false;
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('userTitle').textContent = currentUser.username;
+        document.getElementById('secrets').style.display = '';
+        document.getElementById('deco').style.display = '';
+        setTimeout(function(){ getSecretList(currentUser); }, 1000);
+      }, function(err){
+        alert(err);
+        throw(err);
+      });
     }
     else{
-      alert('Username already exists')
+      alert('Username already exists');
     }
-  })
+  });
 });
 
 document.getElementById('getKeys').addEventListener('click', function(e){
-  var username = document.getElementById('username').value
-  var password = document.getElementById('password').value
-  api.getPublicKey(username).then(function(publicKey){
-    user = new User(username)
-    return user.importPublicKey(publicKey)
+  var username = document.getElementById('username').value;
+  var password = document.getElementById('password').value;
+  var remoteUser;
+  api.getUser(username).then(function(user){
+    currentUser = new User(username);
+    remoteUser = user;
+    currentUser.keys = remoteUser.keys;
+    return currentUser.importPublicKey(remoteUser.publicKey);
   }).then(function(){
-    return api.getWrappedPrivateKey(username)
-  }).then(function(wrappedPrivateKey){
-    return user.importPrivateKey(password, wrappedPrivateKey)
+    return currentUser.importPrivateKey(password, remoteUser.privateKey);
   }).then(function(){
-    document.getElementById('username').value = ''
-    document.getElementById('password').value = ''
-    document.getElementById('currentUser').textContent = user.username;
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('userTitle').textContent = currentUser.username;
     document.getElementById('secrets').style.display = '';
-    getSecretList(user)
+    document.getElementById('deco').style.display = '';
+    getSecretList(currentUser);
   }, function(err){
-    alert(err)
-  })
-
-})
+    alert(err);
+    throw(err);
+  });
+});
 
 document.getElementById('addSecret').addEventListener('click', function(e){
-  var title = document.getElementById('secretTitle').value
-  var content = document.getElementById('secretContent').value
-  user.createSecret(title, content).then(function(secret){
-    return api.addSecret(secret.creator, secret.wrappedKey, secret.iv, secret.encryptedTitle, secret.hashTitle, secret.secret)
+  var title   = document.getElementById('secretTitle').value;
+  var content = document.getElementById('secretContent').value;
+  currentUser.createSecret(title, content).then(function(secretObject){
+    return api.addSecret(secretObject);
   }).then(function(msg){
-    document.getElementById('secretTitle').value = ''
-    document.getElementById('secretContent').value = ''
-    if(document.getElementById('db')){
-      document.getElementById('db').value = JSON.stringify(api.db)
-    }
-    getSecretList(user)
+    document.getElementById('secretTitle').value = '';
+    document.getElementById('secretContent').value = '';
+    return api.getKeys(currentUser.username);
+  }).then(function(keys){
+    currentUser.keys = keys;
+    getSecretList(currentUser);
   }, function(err){
-    alert(err)
-  })
-})
+    alert(err);
+    throw(err);
+  });
+});
 
 var timeout;
 
 window.addEventListener('focus', function() {
-  clearInterval(timeout)
+  clearInterval(timeout);
 });
 
 window.addEventListener('blur', function() {
-  timeout = setTimeout(function() { destroyUser(user) }, 30000)
+  timeout = setTimeout(function() { destroyUser(currentUser); }, 30000);
 });
 
 
 document.getElementById('deco').addEventListener('click', function(e){
-  destroyUser(user);
+  destroyUser(currentUser);
 });
 
 function destroyUser(user){
-  var secretsList = document.getElementById('secretsList')
-  var oldElems = document.querySelectorAll('.secretElem')
+  var secretsList = document.getElementById('secretsList');
+  var oldElems = document.querySelectorAll('.secretElem');
   for (var i = 0; i < oldElems.length; i++) {
-    secretsList.removeChild(oldElems[i])
+    secretsList.removeChild(oldElems[i]);
   }
-  document.getElementById('currentUser').textContent = 'Not connected';
+  document.getElementById('userTitle').textContent = 'Not connected';
   document.getElementById('secrets').style.display = 'none';
+  document.getElementById('deco').style.display = 'none';
   user.disconnect();
 }
 
 function share(e){
-  var hash  = e.path[1].children[0].textContent
+  var hashedTitle  = e.path[1].children[0].textContent;
   var encryptedSecret;
   var friend;
   var rights;
-  var result = {};
-  api.getSecret(hash).then(function(eSecret){
-    encryptedSecret = eSecret
-    var friendName = prompt('Which friend ?')
-    rights = prompt('Which rights (0=read, 1=+write, 2=+share) ?')
-    friend = new User(friendName)
-    e.target.disabled = true
-    return api.getPublicKey(friend.username)
+  api.getSecret(hashedTitle).then(function(eSecret){
+    encryptedSecret = eSecret;
+    var friendName = prompt('Which friend ?');
+    rights = prompt('Which rights (0=read, 1=+write, 2=+share) ?');
+    friend = new User(friendName);
+    e.target.disabled = true;
+    return api.getPublicKey(friend.username);
   }).then(function(publicKey){
-    return friend.importPublicKey(publicKey)
+    return friend.importPublicKey(publicKey);
   }).then(function(){
-    return api.getKeys(user.username)
-  }).then(function(keys){
-    return user.shareSecret(friend, keys[hash].key, hash)
-  }).then(function(result){
-    return api.shareSecret(user, result.hashedFriendName, result.friendWrappedKey, result.encryptedTitle, hash, rights)
+    return currentUser.shareSecret(friend, currentUser.keys[hashedTitle].key, hashedTitle);
+  }).then(function(sharedSecretObject){
+    return api.shareSecret(currentUser, sharedSecretObject, hashedTitle, rights);
   }).then(function(){
-    if(document.getElementById('db')){
-      document.getElementById('db').value = JSON.stringify(api.db)
-    }
-    e.target.disabled = false
+    e.target.disabled = false;
   }, function(err){
-    e.target.disabled = false
-    alert(err)
-  })
+    e.target.disabled = false;
+    alert(err);
+    throw(err);
+  });
 }
 
 function unHide(e){
-  var hash  = e.path[1].children[0].textContent
-  var input = e.path[1].children[2]
-  var btn   = e.target
+  var hashedTitle  = e.path[1].children[0].textContent;
+  var input = e.path[1].children[2];
+  var btn   = e.target;
+  var btnEdit   = e.path[1].children[4];
   if(btn.value === 'Unhide'){
-    var encryptedSecret;
-    api.getSecret(hash).then(function(eSecret){
-      encryptedSecret = eSecret;
-      return api.getKeys(user.username)
-    }).then(function(keys){
-      return user.decryptSecret(encryptedSecret, keys[hash].key)
+    api.getSecret(hashedTitle).then(function(encryptedSecret){
+      return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
     }).then(function(secret){
-      input.type  = 'text'
-      input.value = secret
-      btn.value   = 'Hide'
-    })
+      input.type  = 'text';
+      input.value = secret;
+      btn.value   = 'Hide';
+    });
   }
   else{
-    input.type  = 'password'
-    input.value = '********'
-    btn.value   = 'Unhide'
+    input.disabled = true;
+    input.type  = 'password';
+    input.value = '********';
+    btn.value   = 'Unhide';
+    btnEdit.value = 'Edit';
   }
 }
 
-// function editSecret(e){
-//   var hash  = e.path[1].children[0].textContent
-//   var btn   = e.path[1].children[3]
-//   if(btn.value === '')
-//   console.log(hash)
+function editSecret(e){
+  var hashedTitle       = e.path[1].children[0].textContent;
+  var input             = e.path[1].children[2];
+  var btn               = e.path[1].children[3];
+  var btnEdit           = e.target;
+  if(btn.value === 'Unhide'){
+    api.getSecret(hashedTitle).then(function(encryptedSecret){
+      return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
+    }).then(function(secret){
+      input.type  = 'text';
+      input.value = secret;
+      btn.value   = 'Hide';
+    });
+  }
 
-// }
+  if(btnEdit.value === 'Edit'){
+    input.disabled = false;
+    btnEdit.value = 'Save';
+  }
+  else{
+    var content = input.value;
+    currentUser.editSecret(content, currentUser.keys[hashedTitle].key).then(function(secretObject){
+      return api.editSecret(currentUser, secretObject, hashedTitle);
+    }).then(function(){
+      btnEdit.value = 'Edit';
+      input.disabled = true;
+    }, function(err){
+      alert(err);
+      throw(err);
+    });
+  }
+}
 
-function uiSecret(hash, title){
+function deleteSecret(e){
+  var title       = e.path[1].children[1].textContent;
+  var hashedTitle = e.path[1].children[0].textContent;
+  var sure = confirm('Are you sure to delete ' + title + '?');
+  if(sure){
+    api.deleteSecret(currentUser, hashedTitle).then(function(){
+      return api.getKeys(currentUser.username);
+    }).then(function(keys){
+      currentUser.keys = keys;
+      getSecretList(currentUser);
+    }, function(err){
+      alert(err);
+      throw(err);
+    });
+  }
+}
 
-  var elem = document.createElement('li')
-  elem.classList.add('secretElem')
-  var secret = document.createElement('input')
-  secret.type = 'password'
-  secret.value = '********'
-  secret.disabled = true
-  //secret.addEventListener('dblclick', editSecret)
+function uiSecret(hashedTitle, title){
+  var elem = document.createElement('li');
+  elem.classList.add('secretElem');
+  var secret = document.createElement('input');
+  secret.type = 'password';
+  secret.value = '********';
+  secret.disabled = true;
 
-  var btn = document.createElement('input')
-  btn.type = 'button'
-  btn.value = 'Unhide'
-  btn.addEventListener('click', unHide)
+  var btn = document.createElement('input');
+  btn.type = 'button';
+  btn.value = 'Unhide';
+  btn.addEventListener('click', unHide);
 
-  var shareBtn = document.createElement('input')
-  shareBtn.type = 'button'
-  shareBtn.value = 'Share'
-  shareBtn.addEventListener('click', share)
+  var shareBtn = document.createElement('input');
+  shareBtn.type = 'button';
+  shareBtn.value = 'Share';
+  shareBtn.addEventListener('click', share);
 
-  var titleSpan = document.createElement('span')
-  titleSpan.textContent = title.substring(14)
+  var editBtn = document.createElement('input');
+  editBtn.type = 'button';
+  editBtn.value = 'Edit';
+  editBtn.addEventListener('click', editSecret);
 
-  var hashSpan = document.createElement('span')
-  hashSpan.textContent = hash
-  hashSpan.style.display = "none"
-  elem.appendChild(hashSpan)
-  elem.appendChild(titleSpan)
-  elem.appendChild(secret)
-  elem.appendChild(btn)
-  elem.appendChild(shareBtn)
+  var deleteBtn = document.createElement('input');
+  deleteBtn.type = 'button';
+  deleteBtn.value = 'Delete';
+  deleteBtn.addEventListener('click', deleteSecret);
+
+  var titleSpan = document.createElement('span');
+  titleSpan.textContent = title.substring(14);
+
+  var hashSpan = document.createElement('span');
+  hashSpan.textContent = hashedTitle;
+  hashSpan.style.display = 'none';
+  elem.appendChild(hashSpan);
+  elem.appendChild(titleSpan);
+  elem.appendChild(secret);
+  elem.appendChild(btn);
+  elem.appendChild(editBtn);
+  elem.appendChild(shareBtn);
+  elem.appendChild(deleteBtn);
   return elem;
 }
 
 function getSecretList(){
-  var secretsList = document.getElementById('secretsList')
-  var oldElems = document.querySelectorAll('.secretElem')
+  var secretsList = document.getElementById('secretsList');
+  var oldElems = document.querySelectorAll('.secretElem');
   for (var i = 0; i < oldElems.length; i++) {
-    secretsList.removeChild(oldElems[i])
+    secretsList.removeChild(oldElems[i]);
   }
-  api.getKeys(user.username).then(function(keys){
-    return user.decryptTitles(keys)
-  }).then(function(){
-    Object.keys(user.titles).forEach(function(hash){
-      secretsList.appendChild(uiSecret(hash, user.titles[hash]))
-    })
-  })
+  currentUser.decryptTitles().then(function(){
+    Object.keys(currentUser.titles).forEach(function(hashedTitle){
+      secretsList.appendChild(uiSecret(hashedTitle, currentUser.titles[hashedTitle]));
+    });
+  });
 }
-
-});

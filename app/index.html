@@ -9,8 +9,16 @@
     <!-- <link rel="stylesheet" href="styles/main.css"> -->
   </head>
   <body>
+  <div id="right" style="float:right; margin-right:20px;">
+    <textarea id="db" rows="30" cols="100"></textarea><br />
+    <center><input type="button" id="getDb" value="Get db" style="display:none" /></center>
+  </div>
+
+  <div id="remote" style="display:none;">
   <h2>Database</h2>
-  <textarea id="db" rows=20 cols=50>{"users":{}, "secrets": {}}</textarea>
+  <p>Let blank if you want to use www.secret-in.me database.</p>
+  <input type="text" id="dbUri">
+  </div>
 
   <h2>New User</h2>
   Username : <input type="text" id="newUsername" /><br />
@@ -23,7 +31,7 @@
   Master Password : <input type="password" id="password" /><br />
   <input type="button" id="getKeys" value="Get keys" />
 
-  <h2 id="currentUser">Not connected</h2>
+  <h2 id="userTitle">Not connected</h2><input type="button" id="deco" value="Disconnect" style="display:none" />
   <div id="secrets" style="margin-left: 30px; display: none">
     <h2>Add Secret</h2>
     Secret Ttile : <input type="text" id="secretTitle"><br />

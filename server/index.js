@@ -60,15 +60,20 @@ app.get('/database/:name', function (req, res) {
     if(exists){
       db.users[req.params.name] = user;
       var hashedTitles = Object.keys(user.keys);
-      hashedTitles.forEach(function(hashedTitle){
-        secretExists(hashedTitle, function(exists, secret){
-          db.secrets[hashedTitle] = secret;
-          db.secrets[hashedTitle].users = [req.params.name];
-          if(Object.keys(db.secrets).length === hashedTitles.length){
-            res.json(db);
-          }
+      if(hashedTitles.length !== 0){
+        hashedTitles.forEach(function(hashedTitle){
+          secretExists(hashedTitle, function(exists, secret){
+            db.secrets[hashedTitle] = secret;
+            db.secrets[hashedTitle].users = [req.params.name];
+            if(Object.keys(db.secrets).length === hashedTitles.length){
+              res.json(db);
+            }
+          });
         });
-      });
+      }
+      else{
+        res.json(db);
+      }
     }
     else{
       res.writeHead(404, 'User not found', {});
@@ -163,6 +168,78 @@ app.post('/user/:name/:title', function (req, res) {
     }
     else{
       res.writeHead(404, 'User not found', {});
+      res.end();
+    }
+  });
+});
+
+app.delete('/user/:name/:title', function (req, res) {
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      userExists(req.params.name, function(uExists, user, metaUser){
+        if(uExists){
+          secretExists(req.params.title, function(sExists, secret, metaSecret){
+            if(sExists){
+              var secretDoc = {secret: {}};
+              secretDoc.secret[req.params.title] = secret;
+              _.remove(secretDoc.secret[req.params.title].users, function(currentUser) {
+                return (currentUser === req.params.name);
+              });
+
+              var userDoc = {user: {}};
+              userDoc.user[req.params.name] = user;
+              delete userDoc.user[req.params.name].keys[req.params.title];
+
+              db.save(metaUser.id, metaUser.rev, userDoc, function (err, ret) {
+                if(err === null && ret.ok === true){
+                  if(secretDoc.secret[req.params.title].users.length === 0){
+                    db.remove(metaSecret.id, metaSecret.rev, function(err, ret){
+                      if(err === null && ret.ok === true){
+                        res.writeHead(200, 'Secret deleted', {});
+                        res.end();
+                      }
+                      else{
+                        console.log(err)
+                        res.writeHead(500, 'Unknown error', {});
+                        res.end();
+                      }
+                    });
+                  }
+                  else{
+                    db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
+                      if(err === null && ret.ok === true){
+                        res.writeHead(200, 'Secret deleted', {});
+                        res.end();
+                      }
+                      else{
+                        console.log(err)
+                        res.writeHead(500, 'Unknown error', {});
+                        res.end();
+                      }
+                    });
+                  }
+                }
+                else{
+                  console.log(err)
+                  res.writeHead(500, 'Unknown error', {});
+                  res.end();
+                }
+              });
+            }
+            else{
+              res.writeHead(404, 'Secret not found', {});
+              res.end();
+            }
+          });
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
+        }
+      });
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
       res.end();
     }
   });
