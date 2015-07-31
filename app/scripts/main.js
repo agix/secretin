@@ -107,6 +107,54 @@ function destroyUser(user){
   user.disconnect();
 }
 
+function refresh(){
+  api.getKeys(currentUser.username).then(function(keys){
+    currentUser.keys = keys;
+    getSecretList(currentUser);
+  }, function(err){
+    alert(err);
+    throw(err);
+  });
+}
+
+function unshare(e){
+  var hashedTitle  = e.path[1].children[0].textContent;
+  var unfriend;
+  var friendName = prompt('Which friend ?');
+  var encryptedSecret;
+  var secret = {};
+  var wrappedKeys = [];
+  var friend;
+  api.unshareSecret(currentUser, friendName, hashedTitle).then(function(){
+    return api.getSecret(hashedTitle);
+  }).then(function(eSecret){
+      encryptedSecret = eSecret;
+      return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
+  }).then(function(secret){
+      return currentUser.encryptSecret(secret);
+  }).then(function(secretObject){
+    secret.secret = bytesToHexString(secretObject.secret);
+    secret.iv = bytesToHexString(secretObject.iv);
+    encryptedSecret.users.forEach(function(hashedUsername){
+      api.getPublicKey(hashedUsername, true).then(function(publicKey){
+        friend = new User(hashedUsername);
+        return friend.importPublicKey(publicKey);
+      }).then(function(){
+        return currentUser.wrapKey(secretObject.key, friend.publicKey);
+      }).then(function(friendWrappedKey){
+        wrappedKeys.push({user: hashedUsername, key: friendWrappedKey })
+        if(wrappedKeys.length === encryptedSecret.users.length){
+          api.newKey(currentUser, hashedTitle, secret, wrappedKeys);
+        }
+      });
+    });
+  }, function(err){
+    alert(err);
+    throw(err);
+  });
+
+}
+
 function share(e){
   var hashedTitle  = e.path[1].children[0].textContent;
   var encryptedSecret;
@@ -225,6 +273,11 @@ function uiSecret(hashedTitle, title){
   shareBtn.value = 'Share';
   shareBtn.addEventListener('click', share);
 
+  var unshareBtn = document.createElement('input');
+  unshareBtn.type = 'button';
+  unshareBtn.value = 'Unshare';
+  unshareBtn.addEventListener('click', unshare);
+
   var editBtn = document.createElement('input');
   editBtn.type = 'button';
   editBtn.value = 'Edit';
@@ -234,6 +287,11 @@ function uiSecret(hashedTitle, title){
   deleteBtn.type = 'button';
   deleteBtn.value = 'Delete';
   deleteBtn.addEventListener('click', deleteSecret);
+
+  var refreshBtn = document.createElement('input');
+  refreshBtn.type = 'button';
+  refreshBtn.value = 'Refresh';
+  refreshBtn.addEventListener('click', refresh);
 
   var titleSpan = document.createElement('span');
   titleSpan.textContent = title.substring(14);
@@ -247,7 +305,9 @@ function uiSecret(hashedTitle, title){
   elem.appendChild(btn);
   elem.appendChild(editBtn);
   elem.appendChild(shareBtn);
+  elem.appendChild(unshareBtn);
   elem.appendChild(deleteBtn);
+  elem.appendChild(refreshBtn);
   return elem;
 }
 

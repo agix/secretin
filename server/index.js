@@ -316,6 +316,169 @@ app.post('/edit/:name/:title', function (req, res) {
   });
 });
 
+app.post('/newKey/:name/:title', function (req, res) {
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      secretExists(req.params.title, function(sExists, secret, metaSecret){
+        if(sExists){
+          userExists(req.params.name, function(uExists, user, metaUser){
+            if(uExists){
+              if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
+                secret.secret = req.body.secret.secret;
+                secret.iv = req.body.secret.iv;
+
+                var secretDoc = {secret: {}};
+                secretDoc.secret[req.params.title] = secret;
+
+                db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
+                  if(err === null && ret.ok === true){
+                    var OK = 0;
+                    var KO = 0;
+                    req.body.wrappedKeys.forEach(function(wrappedKey){
+                      userExists(wrappedKey.user, function(uFExists, fUser, metaFUser){
+                        if(uFExists){
+                          fUser.keys[req.params.title].key = wrappedKey.key;
+
+                          var fUserDoc = {user: {}};
+                          fUserDoc.user[wrappedKey.user] = fUser;
+
+                          db.save(metaFUser.id, metaFUser.rev, fUserDoc, function (err, ret) {
+                            if(err === null && ret.ok === true){
+                              OK += 1;
+                            }
+                            else{
+                              console.log(err)
+                              KO +=1;
+                            }
+                            if(OK+KO === req.body.wrappedKeys.length){
+                              if(KO === 0){
+                                res.writeHead(200, 'Generated new key reshared', {});
+                                res.end();
+                              }
+                              else{
+                                res.writeHead(500, 'Unknown error', {});
+                                res.end();
+                              }
+                            }
+                          });
+                        }
+                      });
+                    });
+                  }
+                  else{
+                    console.log(err)
+                    res.writeHead(500, 'Unknown error', {});
+                    res.end();
+                  }
+                });
+              }
+              else{
+                res.writeHead(403, 'You can\'t reset this key', {});
+                res.end();
+              }
+            }
+            else{
+              res.writeHead(404, 'User not found', {});
+              res.end();
+            }
+          });
+        }
+        else{
+          res.writeHead(404, 'Secret not found', {});
+          res.end();
+        }
+      });
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
+    }
+  });
+});
+
+app.post('/unshare/:name/:title', function (req, res) {
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      if(req.params.name !== req.body.friendName){
+        userExists(req.params.name, function(uExists, user, metaUser){
+          if(uExists){
+            userExists(req.body.friendName, function(uFExists, fUser, metaFUser){
+              if(uFExists){
+                secretExists(req.params.title, function(sExists, secret, metaSecret){
+                  if(sExists){
+                    if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
+                      if(typeof fUser.keys[req.params.title] === 'undefined'){
+                        res.writeHead(404, 'You didn\'t share this secret with this friend', {});
+                        res.end();
+                      }
+                      else{
+                        delete fUser.keys[req.params.title];
+                        var fUserDoc = {user: {}};
+                        fUserDoc.user[req.body.friendName] = fUser;
+
+                        var secretDoc = {secret: {}};
+                        secretDoc.secret[req.params.title] = secret;
+                        _.remove(secretDoc.secret[req.params.title].users, function(currentUser) {
+                          return (currentUser === req.body.friendName);
+                        });
+
+                        db.save(metaFUser.id, metaFUser.rev, fUserDoc, function (err, ret) {
+                          if(err === null && ret.ok === true){
+                            db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
+                              if(err === null && ret.ok === true){
+                                res.writeHead(200, 'Secret unshared', {});
+                                res.end();
+                              }
+                              else{
+                                console.log(err)
+                                res.writeHead(500, 'Unknown error', {});
+                                res.end();
+                              }
+                            });
+                          }
+                          else{
+                            console.log(err)
+                            res.writeHead(500, 'Unknown error', {});
+                            res.end();
+                          }
+                        });
+                      }
+                    }
+                    else{
+                      res.writeHead(403, 'You can\'t unshare this secret', {});
+                      res.end();
+                    }
+                  }
+                  else{
+                    res.writeHead(404, 'Secret not found', {});
+                    res.end();
+                  }
+                });
+              }
+              else{
+                res.writeHead(404, 'Friend not found', {});
+                res.end();
+              }
+            });
+          }
+          else{
+            res.writeHead(404, 'User not found', {});
+            res.end();
+          }
+        });
+      }
+      else{
+        res.writeHead(403, 'You can\'t unshare with youself', {});
+        res.end();
+      }
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
+    }
+  });
+});
+
 app.post('/share/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
