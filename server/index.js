@@ -118,6 +118,39 @@ app.post('/user/:name', function (req, res) {
   });
 });
 
+app.put('/user/:name', function (req, res) {
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      userExists(req.params.name, function(exists, user, metaUser){
+        if(exists){
+          var doc = {user: {}};
+          doc.user[req.params.name] = user;
+          doc.user[req.params.name].privateKey = req.body.privateKey;
+          db.save(metaUser.id, metaUser.rev, doc, function (err, ret) {
+            if(err === null && ret.ok === true){
+              res.writeHead(200, 'Password changed', {});
+              res.end();
+            }
+            else{
+              console.log(err);
+              res.writeHead(500, 'Unknown error', {});
+              res.end();
+            }
+          });
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
+        }
+      });
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
+    }
+  });
+});
+
 app.post('/user/:name/:title', function (req, res) {
   userExists(req.params.name, function(uExists, user, metaUser){
     if(uExists){
@@ -560,7 +593,7 @@ app.post('/share/:name/:title', function (req, res) {
   });
 });
 
-var server = app.listen(3000, function () {
+var server = app.listen(3000, '127.0.0.1', function () {
 
   var host = server.address().address;
   var port = server.address().port;

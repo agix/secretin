@@ -107,7 +107,7 @@ User.prototype.editSecret = function(secret, wrappedKey){
     result.iv = bytesToHexString(secretObject.iv);
     return result;
   });
-}
+};
 
 User.prototype.createSecret = function(title, secret){
   var _this = this;

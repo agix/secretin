@@ -23,8 +23,9 @@ function genRSAOAEP(){
 
 function encryptAESCBC256(secret, key){
   var result = {};
+  var algorithm = {};
   if(typeof key === 'undefined'){
-    var algorithm = {
+    algorithm = {
       name: 'AES-CBC',
       length: 256
     };
@@ -35,7 +36,7 @@ function encryptAESCBC256(secret, key){
     return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
       var iv = new Uint8Array(16);
       crypto.getRandomValues(iv);
-      var algorithm = {
+      algorithm = {
         name: 'AES-CBC',
         iv: iv
       };
@@ -49,9 +50,10 @@ function encryptAESCBC256(secret, key){
     });
   }
   else{
+    result.key = key;
     var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
-    var algorithm = {
+    algorithm = {
       name: 'AES-CBC',
       iv: iv
     };
@@ -183,7 +185,7 @@ function importPrivateKey(password, privateKeyObject){
       name: "RSA-OAEP",
       hash: {name: "sha-256"}
     };
-    var extractable = false;
+    var extractable = true;
     var keyUsages = ['unwrapKey', 'decrypt'];
 
     return crypto.subtle.unwrapKey(

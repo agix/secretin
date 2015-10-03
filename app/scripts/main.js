@@ -80,6 +80,18 @@ document.getElementById('addSecret').addEventListener('click', function(e){
   });
 });
 
+document.getElementById('changeUser').addEventListener('click', function(e) {
+  var password = document.getElementById('changePassword').value;
+  currentUser.exportPrivateKey(password).then(function(privateKey){
+    return api.changePassword(currentUser, privateKey);
+  }).then(function(msg){
+    document.getElementById('changePassword').value = '';
+  }, function(err){
+    alert(err);
+    throw(err);
+  });
+});
+
 var timeout;
 
 window.addEventListener('focus', function() {
@@ -89,7 +101,6 @@ window.addEventListener('focus', function() {
 window.addEventListener('blur', function() {
   timeout = setTimeout(function() { destroyUser(currentUser); }, 30000);
 });
-
 
 document.getElementById('deco').addEventListener('click', function(e){
   destroyUser(currentUser);
@@ -142,7 +153,7 @@ function unshare(e){
       }).then(function(){
         return currentUser.wrapKey(secretObject.key, friend.publicKey);
       }).then(function(friendWrappedKey){
-        wrappedKeys.push({user: hashedUsername, key: friendWrappedKey })
+        wrappedKeys.push({user: hashedUsername, key: friendWrappedKey });
         if(wrappedKeys.length === encryptedSecret.users.length){
           api.newKey(currentUser, hashedTitle, secret, wrappedKeys);
         }

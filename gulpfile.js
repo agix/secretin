@@ -79,7 +79,7 @@ gulp.task('deploy', function() {
   gulp.src(['server/clien*/**', 'server/index.js', 'server/install.js', 'server/package.json'])
     .pipe(tar('secretin.tar'))
     .pipe(gzip())
-    .pipe(gulp.dest('dist'));
+    .pipe(gulp.dest('./'));
 
   gulp.src('server/client/alon*/**')
     .pipe(tar('secretinAlone.tar'))

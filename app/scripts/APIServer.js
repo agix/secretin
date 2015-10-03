@@ -139,9 +139,9 @@ API.prototype.retrieveUser = function(username, hashed){
   }
 };
 
-API.prototype.getWrappedPrivateKey = function(username){
+API.prototype.getWrappedPrivateKey = function(username, hashed){
   var _this = this;
-  return _this.retrieveUser(username, false).then(function(user){
+  return _this.retrieveUser(username, hashed).then(function(user){
     return user.privateKey;
   });
 };
@@ -153,9 +153,9 @@ API.prototype.getPublicKey = function(username, hashed){
   });
 };
 
-API.prototype.getKeys = function(username){
+API.prototype.getKeys = function(username, hashed){
   var _this = this;
-  return _this.retrieveUser(username, false).then(function(user){
+  return _this.retrieveUser(username, hashed).then(function(user){
     return user.keys;
   });
 };
@@ -176,5 +176,19 @@ API.prototype.getDb = function(username){
   var _this = this;
   return SHA256(username).then(function(hashedUsername){
     return GET(_this.db+'/database/'+bytesToHexString(hashedUsername));
+  });
+};
+
+API.prototype.changePassword = function(user, privateKey){
+  var _this = this;
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return PUT(_this.db+'/user/'+hashedUsername,{
+      privateKey: privateKey,
+      token: bytesToHexString(token)
+    });
   });
 };

@@ -16,9 +16,17 @@ function GET(path){
 }
 
 function POST(path, datas){
+  return reqData(path, datas, 'POST');
+}
+
+function PUT(path, datas){
+  return reqData(path, datas, 'PUT');
+}
+
+function reqData(path, datas, type){
   return new Promise(function(resolve, reject){
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', encodeURI(path));
+    xhr.open(type, encodeURI(path));
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
       if (xhr.status === 200) {
