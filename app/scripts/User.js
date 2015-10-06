@@ -14,7 +14,8 @@ User.prototype.disconnect = function(){
   delete _this.publicKey;
   delete _this.privateKey;
   delete _this.titles;
-  delete _this.challenge;
+  delete _this.keys;
+  delete _this.token;
 };
 
 User.prototype.isTokenValid = function(){

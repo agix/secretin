@@ -6,46 +6,142 @@
     <meta name="description" content="https://github.com/agix/secretin">
     <meta name="viewport" content="width=device-width">
     <link rel="shortcut icon" href="/favicon.ico">
-    <!-- <link rel="stylesheet" href="styles/main.css"> -->
+    <link rel="stylesheet" href="/styles/main.css">
   </head>
   <body>
-  <div id="right" style="float:right; margin-right:20px;">
+  <ul id="menu">
+    <li class="level-1 hover">
+      <a href="/">Home</a>
+    </li>
+    <li class="level-1">
+      <a href="/alone">StandAlone</a>
+    </li>
+    <li class="level-1">
+      <a href="/secretinAlone.tar.gz" target="_blank">Download</a>
+    </li>
+    <li class="level-1">
+      <a href="https://github.com/agix/secretin#how-it-works" target="_blank">About</a>
+    </li>
+  </ul>
+  <div id="content">
+  <div id="right" style="display: none; margin-right:20px;">
     <textarea id="db" rows="30" cols="100"></textarea><br />
     <center><input type="button" id="getDb" value="Get db" style="display:none" /></center>
   </div>
 
   <div id="remote" style="display:none;">
-  <h2>Links</h2>
-  <a href="/alone">Secret-in client only hosted app</a><br />
-  <a href="/secretinAlone.tar.gz" target="_blank">Secret-in client only archived app</a>
-  <h2>Database</h2>
-  <p>Let blank if you want to use www.secret-in.me database.</p>
-  <input type="text" id="dbUri">
+  </div>
+  <div style="display:none">
+    <h2>Database</h2>
+    <p>Let blank if you want to use www.secret-in.me database.</p>
+    <input type="text" id="dbUri">
   </div>
 
-  <h2>New User</h2>
-  Username : <input type="text" id="newUsername" /><br />
-  Master Password : <input type="password" id="newPassword" /><br />
-  <input type="button" id="newUser" value="New user" />
+  <div class="widget">
+    <ol class="widget-list" id="createUser">
+      <div>
+        <input type="text" id="newUsername" placeholder="Username"/>
+        <input type="password" id="newPassword" placeholder="Master Password"/>
+        <input type="button" class="btn" id="newUser" value="Generate" />
+        <div id="errorNew" style="display:none" class="error"></div>
+      </div>
+    </ol>
 
+    <ol class="widget-list" id="changePassword">
+      <div>
+        <span>
+          <input type="password" id="changePasswordInput" placeholder="Master Password"/>
+          <input type="button" class="btn" id="changePasswordBtn" value="Change password" />
+          <a href="#keys" class="btn">Cancel</a>
+        </span>
+      </div>
+    </ol>
 
-  <h2>Get your keys</h2>
-  Username : <input type="text" id="username" /><br />
-  Master Password : <input type="password" id="password" /><br />
-  <input type="button" id="getKeys" value="Get keys" />
+    <ol class="widget-list" id="keys">
+      <div>
+        <span id="login">
+          <input type="text" id="username" placeholder="Username"/>
+          <input type="password" id="password" placeholder="Master Password"/>
+          <input type="button" class="btn" id="getKeys" value="Get keys" />
+          <div id="errorLogin" style="display:none" class="error"></div>
+        </span>
+        <span id="secrets" style="display:none">
+          <h2 id="userTitle">Not connected</h2>
+          <a class="btn2" href="#addSecretPopup">Add secret</a>
+          <a class="btn2" href="#changePassword">Change password</a>
+          <input type="button" class="btn2" id="deco" value="Disconnect"/>
+          <span class="separator"></span>
+          <h3>Secrets list <a id="refresh">↺</a></h3>
+          <ul id="secretsList"></ul>
+        </span>
+      </div>
+    </ol>
 
-  <h2 id="userTitle">Not connected</h2><input type="button" id="deco" value="Disconnect" style="display:none" />
-  <div id="secrets" style="margin-left: 30px; display: none">
-    <h2>Change my Master Password</h2>
-    <input type="password" id="changePassword" /><br />
-    <input type="button" id="changeUser" value="Change password" />
-    <h2>Add Secret</h2>
-    Secret Ttile : <input type="text" id="secretTitle"><br />
-    Secret Content : <br />
-    <textarea id="secretContent"></textarea><br />
-    <input type="button" id="addSecret" value="Add secret" />
-    <h2>Secrets list</h2>
-    <ul id="secretsList"></ul>
+    <ul class="widget-tabs">
+      <li class="widget-tab">
+        <a href="#createUser" class="widget-tab-link">Create User</a>
+      </li>
+      <li class="widget-tab">
+        <a href="#keys" class="widget-tab-link">Get keys</a>
+      </li>
+    </ul>
+  </div>
+
+    <div id="addSecretPopup" class="overlay">
+      <div class="popup">
+        <h2>Add secret</h2>
+        <a class="close" href="#keys">×</a>
+        <div class="content">
+          <input type="text" id="secretTitle" placeholder="Secret title"/><br />
+          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><br />
+          <input type="button" class="btn3" id="addSecret" value="Add secret" />
+        </div>
+      </div>
+    </div>
+
+    <div id="showSecret" class="overlay">
+      <div class="popup">
+        <h2 id="showSecretTitle"></h2>
+        <div class="content">
+          <textarea class="secretContent" id="showSecretContent" disabled></textarea><br />
+          <input type="button" class="btn3" id="hideSecret" value="Hide" />
+        </div>
+      </div>
+    </div>
+
+    <div id="editSecret" class="overlay">
+      <div class="popup">
+        <h2 id="editSecretTitle"></h2>
+        <a class="close" id="closeEditSecret">×</a>
+        <div class="content">
+          <input type="hidden" id="editSecretHash" />
+          <textarea class="secretContent" id="editSecretContent"></textarea><br />
+          <input type="button" class="btn3" id="saveSecret" value="Save" />
+        </div>
+      </div>
+    </div>
+
+    <div id="shareSecret" class="overlay2">
+      <div class="popup2">
+        <h2 id="shareSecretTitle"></h2>
+        <a class="close" id="closeShareSecret">×</a>
+        <div class="content">
+          <input type="hidden" id="shareSecretHash" />
+          <input type="text" id="friendName" placeholder="Friend name"/>
+          <select id="rights">
+            <option value="0">Read</option>
+            <option value="1">Read/Write</option>
+            <option value="2">Read/Write/Share</option>
+          </select>
+          <input type="button" id="share" value="Share" />
+          <div id="errorShareSecret" style="display:none" class="error"></div>
+          <span class="separator2"></span>
+          <ul id="sharedUsers">
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
 
     <script src="scripts/lib/util.js"></script>

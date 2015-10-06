@@ -24,8 +24,13 @@ gulp.task('buildLocal', function() {
   gulp.src('app/scripts/lib/**')
     .pipe(gulp.dest('dist/scripts/lib'));
 
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('server/client/alone/styles'));
+
   gulp.src('dist/**')
     .pipe(gulp.dest('server/client/alone'));
+
+
 });
 
 
@@ -44,10 +49,14 @@ gulp.task('buildServ', function() {
     .pipe(gulp.dest('server/client/scripts'));
   gulp.src('app/scripts/lib/**')
     .pipe(gulp.dest('server/client/scripts/lib'));
+
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('server/client/styles'));
 });
 
 gulp.task('watch', function() {
   gulp.watch(['app/scripts/**'], ['buildLocal', 'buildServ']);
+  gulp.watch(['app/styles/**'], ['buildLocal', 'buildServ']);
   gulp.watch(['app/*.html'], ['buildLocal', 'buildServ']);
 });
 
