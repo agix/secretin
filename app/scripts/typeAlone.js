@@ -1,3 +1,6 @@
+var menu = document.getElementById('menu');
+menu.children[0].classList.remove('hover');
+menu.children[1].classList.add('hover');
 document.getElementById('db').disabled = false;
 document.getElementById('db').addEventListener('change', function(e) {
   try{

@@ -24,10 +24,7 @@
     </li>
   </ul>
   <div id="content">
-  <div id="right" style="display: none; margin-right:20px;">
-    <textarea id="db" rows="30" cols="100"></textarea><br />
-    <center><input type="button" id="getDb" value="Get db" style="display:none" /></center>
-  </div>
+  <a id="getDb" href="#database" class="btn" type="button">DB</a>
 
   <div id="remote" style="display:none;">
   </div>
@@ -74,6 +71,12 @@
           <h3>Secrets list <a id="refresh">↺</a></h3>
           <ul id="secretsList"></ul>
         </span>
+      </div>
+    </ol>
+
+    <ol class="widget-list" id="database">
+      <div>
+        <textarea id="db"></textarea>
       </div>
     </ol>
 

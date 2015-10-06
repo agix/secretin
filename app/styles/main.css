@@ -140,13 +140,13 @@ body{
   display: none;
 }
 
-input[type="text"], input[type="password"] {
+input[type="text"], input[type="password"], #db {
   padding: 10px;
   border: solid 5px #887CAF;
   transition: border 0.3s;
 }
 
-input[type="text"]:focus, input[type="password"]:focus {
+input[type="text"]:focus, input[type="password"]:focus, #db:focus {
   border: solid 5px #261758;
 }
 
@@ -404,4 +404,9 @@ h2 {
 
 #refresh:hover {
     font-size: 1.1em;
+}
+
+#db{
+    width: 90%;
+    height: 300px;
 }
