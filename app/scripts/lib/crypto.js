@@ -34,7 +34,7 @@ function encryptAESCBC256(secret, key){
       'encrypt'
     ];
     return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
-      var iv = new Uint8Array(32);
+      var iv = new Uint8Array(16);
       crypto.getRandomValues(iv);
       algorithm = {
         name: 'AES-CBC',
@@ -51,7 +51,7 @@ function encryptAESCBC256(secret, key){
   }
   else{
     result.key = key;
-    var iv = new Uint8Array(32);
+    var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
     algorithm = {
       name: 'AES-CBC',
@@ -187,7 +187,7 @@ function exportPrivateKey(password, privateKey){
   var result = {};
   return convertToKey(password).then(function(wrappingKey){
     var format = 'jwk';
-    var iv = new Uint8Array(32);
+    var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
     var wrapAlgorithm = {
       name: "AES-CBC",
@@ -218,7 +218,7 @@ function importPrivateKey(password, privateKeyObject){
     var keyUsages = ['unwrapKey', 'decrypt'];
 
     return crypto.subtle.unwrapKey(
-      format, wrappedPrivateKey, unwrappingKey, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
+      format, wrappedPrivateKey, unwrappingKey.key, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
     );
   }).then(function(privateKey){
     return privateKey;
