@@ -34,7 +34,7 @@ function encryptAESCBC256(secret, key){
       'encrypt'
     ];
     return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
-      var iv = new Uint8Array(32);
+      var iv = new Uint8Array(16);
       crypto.getRandomValues(iv);
       algorithm = {
         name: 'AES-CBC',
@@ -51,7 +51,7 @@ function encryptAESCBC256(secret, key){
   }
   else{
     result.key = key;
-    var iv = new Uint8Array(32);
+    var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
     algorithm = {
       name: 'AES-CBC',
@@ -139,44 +139,58 @@ function importPublicKey(jwkPublicKey){
   return crypto.subtle.importKey(format, jwkPublicKey, algorithm, extractable, keyUsages);
 }
 
+function hashExpress(bytesPromise, i){
+  var iterations = 10000;
+  if(i < iterations){
+    return bytesPromise.then(function(hash){
+      var hashPromise = crypto.subtle.digest('SHA-256', hash);
+      return hashExpress(hashPromise, i+1);
+    });
+  }
+  else{
+    return bytesPromise;
+  }
+}
+
 function convertToKey(password, salt){
+
   var saltBuf;
-
-  var algorithm = {
-    name: 'PBKDF2'
-  };
-
-  var extractable = false;
-
-  var usages = ['deriveBits', 'deriveKey'];
-
   var passwordBuf = asciiToUint8Array(password);
 
-  return crypto.subtle.importKey('raw', passwordBuf, algorithm, extractable, usages).then(function(key) {
-    if(typeof salt === 'undefined'){
-      saltBuf = new Uint8Array(32);
-      crypto.getRandomValues(saltBuf);
+  if(typeof salt === 'undefined'){
+    saltBuf = new Uint8Array(32);
+    crypto.getRandomValues(saltBuf);
+  }
+  else{
+    saltBuf = hexStringToUint8Array(salt);
+  }
+
+  var arrayBuffer = new Uint8Array(passwordBuf.length+saltBuf.length);
+  for(var i = 0; i < passwordBuf.length+saltBuf.length; i++){
+    if(i < passwordBuf.length){
+      arrayBuffer[i] = passwordBuf[i];
     }
     else{
-      saltBuf = hexStringToUint8Array(salt);
+      arrayBuffer[i] = saltBuf[i-passwordBuf.length];
     }
+  }
 
-    var params = {
-      name: 'PBKDF2',
-      salt: saltBuf,
-      iterations: 1000,
-      hash: {name: 'SHA-256'}
+  var hashPromise = crypto.subtle.digest('SHA-256', arrayBuffer);
+  return hashExpress(hashPromise, 0).then(function(hash){
+    var format = 'raw';
+    var algorithm = {
+      name: 'AES-CBC'
     };
+    var extractable = false;
+    var keyUsages = [
+      'wrapKey',
+      'unwrapKey'
+    ];
 
-    var derivedAlgorithm = {
-      name: 'AES-CBC',
-      length: 256
-    };
-
-    return crypto.subtle.deriveKey(params, key, derivedAlgorithm, true, ['encrypt', 'decrypt']);
-  }).then(function(derivedKey){
+    return crypto.subtle.importKey(format, hash, algorithm, extractable, keyUsages);
+  }).then(function(key){
     return {
-      'key': derivedKey,
+      'key': key,
       'salt': saltBuf
     }
   });
@@ -187,17 +201,17 @@ function exportPrivateKey(password, privateKey){
   var result = {};
   return convertToKey(password).then(function(wrappingKey){
     var format = 'jwk';
-    var iv = new Uint8Array(32);
+    var iv = new Uint8Array(16);
     crypto.getRandomValues(iv);
     var wrapAlgorithm = {
       name: "AES-CBC",
       iv: iv
     };
     result.iv = iv;
+    result.salt = wrappingKey.salt;
     return crypto.subtle.wrapKey(format, privateKey, wrappingKey.key, wrapAlgorithm);
   }).then(function(wrappedPrivateKey){
     result.privateKey = wrappedPrivateKey;
-    result.salt = wrappingKey.salt;
     return result;
   });
 }
@@ -218,7 +232,7 @@ function importPrivateKey(password, privateKeyObject){
     var keyUsages = ['unwrapKey', 'decrypt'];
 
     return crypto.subtle.unwrapKey(
-      format, wrappedPrivateKey, unwrappingKey, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
+      format, wrappedPrivateKey, unwrappingKey.key, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
     );
   }).then(function(privateKey){
     return privateKey;
