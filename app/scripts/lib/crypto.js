@@ -153,6 +153,14 @@ function convertToKey(password, salt){
   var passwordBuf = asciiToUint8Array(password);
 
   return crypto.subtle.importKey('raw', passwordBuf, algorithm, extractable, usages).then(function(key) {
+    if(typeof salt === 'undefined'){
+      saltBuf = new Uint8Array(32);
+      crypto.getRandomValues(saltBuf);
+    }
+    else{
+      saltBuf = hexStringToUint8Array(salt);
+    }
+
     var params = {
       name: 'PBKDF2',
       salt: saltBuf,
@@ -164,14 +172,6 @@ function convertToKey(password, salt){
       name: 'AES-CBC',
       length: 256
     };
-
-    if(typeof salt === 'undefined'){
-      saltBuf = new Uint8Array(32);
-      crypto.getRandomValues(saltBuf);
-    }
-    else{
-      saltBuf = hexStringToUint8Array(salt);
-    }
 
     return crypto.subtle.deriveKey(params, key, derivedAlgorithm, true, ['encrypt', 'decrypt']);
   }).then(function(derivedKey){
