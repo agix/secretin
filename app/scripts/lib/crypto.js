@@ -156,7 +156,7 @@ function convertToKey(password, salt){
     var params = {
       name: 'PBKDF2',
       salt: saltBuf,
-      iterations: 1,
+      iterations: 1000,
       hash: {name: 'SHA-256'}
     };
 
