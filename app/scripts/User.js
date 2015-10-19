@@ -62,7 +62,8 @@ User.prototype.exportPrivateKey = function(password){
   return exportPrivateKey(password, _this.privateKey).then(function(privateKeyObject){
     return {
       privateKey: bytesToHexString(privateKeyObject.privateKey),
-      iv: bytesToHexString(privateKeyObject.iv)
+      iv: bytesToHexString(privateKeyObject.iv),
+      salt: bytesToHexString(privateKeyObject.salt)
     };
   });
 };
