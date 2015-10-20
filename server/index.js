@@ -8,6 +8,10 @@ var forge = require('node-forge');
 var rsa = forge.pki.rsa;
 var BigInteger = forge.jsbn.BigInteger;
 var redis = require('redis');
+
+
+OPTIONAL_SALT = '';
+
 client = redis.createClient();
 
 app.use(express.static('client'));
@@ -42,9 +46,20 @@ function checkToken(name, token, callback){
   });
 }
 
-app.get('/user/:name', function (req, res) {
+app.get('/user/:name/:hash', function (req, res) {
   userExists(req.params.name, function(exists, user){
     if(exists){
+      var md = forge.md.sha256.create();
+      md.update(req.params.hash+OPTIONAL_SALT);
+      if(md.digest().toHex() !== user.pass.hash){
+        user.privateKey = {
+          privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+          iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+        };
+        user.keys = {};
+        user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+      }
+
       res.json(user);
     }
     else{
@@ -54,10 +69,21 @@ app.get('/user/:name', function (req, res) {
   });
 });
 
-app.get('/database/:name', function (req, res) {
+app.get('/database/:name/:hash', function (req, res) {
   var db = {users : {}, secrets: {}};
   userExists(req.params.name, function(exists, user){
     if(exists){
+      var md = forge.md.sha256.create();
+      md.update(req.params.hash + OPTIONAL_SALT);
+      if(md.digest().toHex() !== user.pass.hash){
+        user.privateKey = {
+          privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+          iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+        };
+        user.keys = {};
+        user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+      }
+
       db.users[req.params.name] = user;
       var hashedTitles = Object.keys(user.keys);
       if(hashedTitles.length !== 0){
@@ -88,8 +114,11 @@ app.get('/secret/:title', function (req, res) {
       res.json(secret);
     }
     else{
-      res.writeHead(404, 'Secret not found', {});
-      res.end();
+      res.json({
+        secret: forge.util.bytesToHex((forge.random.getBytesSync(128))),
+        iv: forge.util.bytesToHex((forge.random.getBytesSync(16))),
+        users: [forge.util.bytesToHex((forge.random.getBytesSync(32)))]
+      });
     }
   });
 });
@@ -102,6 +131,9 @@ app.post('/user/:name', function (req, res) {
     }
     else{
       var doc = {user: {}};
+      var md = forge.md.sha256.create();
+      md.update(req.body.pass.hash+OPTIONAL_SALT);
+      req.body.pass.hash = md.digest().toHex();
       doc.user[req.params.name] = req.body;
       db.save(doc, function (err, ret) {
         if(err === null && ret.ok === true){
@@ -124,8 +156,15 @@ app.put('/user/:name', function (req, res) {
       userExists(req.params.name, function(exists, user, metaUser){
         if(exists){
           var doc = {user: {}};
+
+          var md = forge.md.sha256.create();
+          md.update(req.body.pass.hash+OPTIONAL_SALT);
+          req.body.pass.hash = md.digest().toHex();
+
           doc.user[req.params.name] = user;
           doc.user[req.params.name].privateKey = req.body.privateKey;
+          doc.user[req.params.name].pass = req.body.pass;
+
           db.save(metaUser.id, metaUser.rev, doc, function (err, ret) {
             if(err === null && ret.ok === true){
               res.writeHead(200, 'Password changed', {});
@@ -152,36 +191,45 @@ app.put('/user/:name', function (req, res) {
 });
 
 app.post('/user/:name/:title', function (req, res) {
-  userExists(req.params.name, function(uExists, user, metaUser){
-    if(uExists){
-      secretExists(req.params.title, function(sExists){
-        if(sExists){
-          res.writeHead(403, 'Secret already exists', {});
-          res.end();
-        }
-        else{
-          var doc = {secret: {}};
+  checkToken(req.params.name, req.body.token, function(valid){
+    if(valid){
+      userExists(req.params.name, function(uExists, user, metaUser){
+        if(uExists){
+          secretExists(req.params.title, function(sExists){
+            if(sExists){
+              res.writeHead(403, 'Secret already exists', {});
+              res.end();
+            }
+            else{
+              var doc = {secret: {}};
 
-          doc.secret[req.params.title] = {
-            secret: req.body.secret,
-            iv: req.body.iv,
-            users: [req.params.name]
-          };
+              doc.secret[req.params.title] = {
+                secret: req.body.secret,
+                iv: req.body.iv,
+                users: [req.params.name]
+              };
 
-          user.keys[req.params.title] = {
-            title: req.body.title,
-            key: req.body.key,
-            rights: 2
-          };
+              user.keys[req.params.title] = {
+                title: req.body.title,
+                key: req.body.key,
+                rights: 2
+              };
 
-          var userDoc = {user: {}};
-          userDoc.user[req.params.name] = user;
-          db.save(metaUser.id, metaUser.rev, userDoc, function (err, ret) {
-            if(err === null && ret.ok === true){
-              db.save(doc, function (err, ret) {
+              var userDoc = {user: {}};
+              userDoc.user[req.params.name] = user;
+              db.save(metaUser.id, metaUser.rev, userDoc, function (err, ret) {
                 if(err === null && ret.ok === true){
-                  res.writeHead(200, 'New secret saved', {});
-                  res.end();
+                  db.save(doc, function (err, ret) {
+                    if(err === null && ret.ok === true){
+                      res.writeHead(200, 'New secret saved', {});
+                      res.end();
+                    }
+                    else{
+                      console.log(err)
+                      res.writeHead(500, 'Unknown error', {});
+                      res.end();
+                    }
+                  });
                 }
                 else{
                   console.log(err)
@@ -190,17 +238,16 @@ app.post('/user/:name/:title', function (req, res) {
                 }
               });
             }
-            else{
-              console.log(err)
-              res.writeHead(500, 'Unknown error', {});
-              res.end();
-            }
           });
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
         }
       });
     }
     else{
-      res.writeHead(404, 'User not found', {});
+      res.writeHead(403, 'Token invalid', {});
       res.end();
     }
   });

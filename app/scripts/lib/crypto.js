@@ -152,7 +152,7 @@ function hashExpress(bytesPromise, i){
   }
 }
 
-function convertToKey(password, salt){
+function derivePassword(password, salt){
 
   var saltBuf;
   var passwordBuf = asciiToUint8Array(password);
@@ -175,6 +175,9 @@ function convertToKey(password, salt){
     }
   }
 
+  var result = {};
+  var lastHash;
+
   var hashPromise = crypto.subtle.digest('SHA-256', arrayBuffer);
   return hashExpress(hashPromise, 0).then(function(hash){
     var format = 'raw';
@@ -186,55 +189,54 @@ function convertToKey(password, salt){
       'wrapKey',
       'unwrapKey'
     ];
+    lastHash = hash;
 
     return crypto.subtle.importKey(format, hash, algorithm, extractable, keyUsages);
   }).then(function(key){
-    return {
-      'key': key,
-      'salt': saltBuf
-    }
+    result.key = key;
+    result.salt = saltBuf;
+    return crypto.subtle.digest('SHA-256', lastHash);
+  }).then(function(hashedKey){
+    result.hash = hashedKey;
+    return result;
   });
 }
 
-function exportPrivateKey(password, privateKey){
-  var format = 'jwk';
+function exportPrivateKey(key, privateKey){
   var result = {};
-  return convertToKey(password).then(function(wrappingKey){
-    var format = 'jwk';
-    var iv = new Uint8Array(16);
-    crypto.getRandomValues(iv);
-    var wrapAlgorithm = {
-      name: "AES-CBC",
-      iv: iv
-    };
-    result.iv = iv;
-    result.salt = wrappingKey.salt;
-    return crypto.subtle.wrapKey(format, privateKey, wrappingKey.key, wrapAlgorithm);
-  }).then(function(wrappedPrivateKey){
+  var format = 'jwk';
+  var iv = new Uint8Array(16);
+  crypto.getRandomValues(iv);
+  var wrapAlgorithm = {
+    name: "AES-CBC",
+    iv: iv
+  };
+  result.iv = iv;
+  return crypto.subtle.wrapKey(
+    format, privateKey, key, wrapAlgorithm
+  ).then(function(wrappedPrivateKey){
     result.privateKey = wrappedPrivateKey;
     return result;
   });
 }
 
-function importPrivateKey(password, privateKeyObject){
-  return convertToKey(password, privateKeyObject.salt).then(function(unwrappingKey){
-    var format = 'jwk';
-    var wrappedPrivateKey = hexStringToUint8Array(privateKeyObject.privateKey);
-    var unwrapAlgorithm = {
-      name: 'AES-CBC',
-      iv: hexStringToUint8Array(privateKeyObject.iv)
-    };
-    var unwrappedKeyAlgorithm = {
-      name: "RSA-OAEP",
-      hash: {name: "sha-256"}
-    };
-    var extractable = true;
-    var keyUsages = ['unwrapKey', 'decrypt'];
+function importPrivateKey(key, privateKeyObject){
+  var format = 'jwk';
+  var wrappedPrivateKey = hexStringToUint8Array(privateKeyObject.privateKey);
+  var unwrapAlgorithm = {
+    name: 'AES-CBC',
+    iv: hexStringToUint8Array(privateKeyObject.iv)
+  };
+  var unwrappedKeyAlgorithm = {
+    name: "RSA-OAEP",
+    hash: {name: "sha-256"}
+  };
+  var extractable = true;
+  var keyUsages = ['unwrapKey', 'decrypt'];
 
-    return crypto.subtle.unwrapKey(
-      format, wrappedPrivateKey, unwrappingKey.key, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
-    );
-  }).then(function(privateKey){
+  return crypto.subtle.unwrapKey(
+    format, wrappedPrivateKey, key, unwrapAlgorithm, unwrappedKeyAlgorithm, extractable, keyUsages
+  ).then(function(privateKey){
     return privateKey;
   }).catch(function(err){
     throw('Invalid Password');

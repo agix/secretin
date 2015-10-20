@@ -161,7 +161,8 @@ input[type="text"]:focus, input[type="password"]:focus, #db:focus {
     border: solid #403075 5px;
     transition: border 0.3s;
     text-decoration: none;
-    cursor: pointer
+    cursor: pointer;
+    font-size: 0.8em;
 }
 
 .btn:hover {

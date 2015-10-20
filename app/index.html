@@ -26,8 +26,6 @@
   <div id="content">
   <a id="getDb" href="#database" class="btn" type="button">DB</a>
 
-  <div id="remote" style="display:none;">
-  </div>
   <div style="display:none">
     <h2>Database</h2>
     <p>Let blank if you want to use www.secret-in.me database.</p>
@@ -54,6 +52,12 @@
       </div>
     </ol>
 
+    <ol class="widget-list" id="database">
+      <div>
+        <textarea id="db"></textarea>
+      </div>
+    </ol>
+
     <ol class="widget-list" id="keys">
       <div>
         <span id="login">
@@ -71,12 +75,6 @@
           <h3>Secrets list <a id="refresh">↺</a></h3>
           <ul id="secretsList"></ul>
         </span>
-      </div>
-    </ol>
-
-    <ol class="widget-list" id="database">
-      <div>
-        <textarea id="db"></textarea>
       </div>
     </ol>
 

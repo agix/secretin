@@ -3,14 +3,11 @@ document.getElementById('dbUri').addEventListener('change', function(e) {
   api = new API(db);
 });
 
-document.getElementById('remote').style.display = '';
-document.getElementById('getDb').style.display = '';
 document.getElementById('db').disabled = true;
-
 
 document.getElementById('getDb').addEventListener('click', function(e) {
   if(typeof currentUser !== 'undefined' && typeof currentUser.username !== 'undefined'){
-    api.getDb(currentUser.username).then(function(db){
+    api.getDb(currentUser.username, currentUser.hash).then(function(db){
       document.getElementById('db').value = JSON.stringify(db);
     });
   }

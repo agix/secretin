@@ -9,17 +9,23 @@ document.getElementById('newUser').addEventListener('click', function(e) {
   api.userExists(username).then(function(exists){
     if(!exists){
       var result = {};
+      var pass = {}
       currentUser = new User(username);
       document.getElementById('newUser').disabled = true;
       document.getElementById('newUser').value = 'Please wait...';
       currentUser.generateMasterKey().then(function(){
-        return currentUser.exportPrivateKey(password);
+        return derivePassword(password);
+      }).then(function(dKey){
+        pass.salt = bytesToHexString(dKey.salt);
+        pass.hash = bytesToHexString(dKey.hash);
+        currentUser.hash = pass.hash;
+        return currentUser.exportPrivateKey(dKey.key);
       }).then(function(privateKey){
         result.privateKey = privateKey;
         return currentUser.exportPublicKey();
       }).then(function(publicKey){
         result.publicKey = publicKey;
-        return api.addUser(currentUser.username, result.privateKey, result.publicKey);
+        return api.addUser(currentUser.username, result.privateKey, result.publicKey, pass);
       }).then(function(msg){
         document.getElementById('newUser').disabled = false;
         document.getElementById('newUser').value = 'Generate';
@@ -31,6 +37,8 @@ document.getElementById('newUser').addEventListener('click', function(e) {
         document.getElementById('deco').style.display = '';
         setTimeout(function(){ getSecretList(currentUser); }, 1000);
       }, function(err){
+        document.getElementById('newUser').disabled = false;
+        document.getElementById('newUser').value = 'Generate';
         error(document.getElementById('errorNew'), err);
         throw(err);
       });
@@ -45,14 +53,27 @@ document.getElementById('getKeys').addEventListener('click', function(e){
   var username = document.getElementById('username').value;
   var password = document.getElementById('password').value;
   var remoteUser;
-  api.getUser(username).then(function(user){
+  var key;
+  var hash;
+  document.getElementById('getKeys').disabled = true;
+  document.getElementById('getKeys').value = 'Please wait...';
+  api.getSalt(username, 'undefined').then(function(salt){
+    return derivePassword(password, salt);
+  }).then(function(dKey){
+    key = dKey.key;
+    hash = bytesToHexString(dKey.hash);
+    return api.getUser(username, hash);
+  }).then(function(user){
     currentUser = new User(username);
     remoteUser = user;
     currentUser.keys = remoteUser.keys;
+    currentUser.hash = hash;
     return currentUser.importPublicKey(remoteUser.publicKey);
   }).then(function(){
-    return currentUser.importPrivateKey(password, remoteUser.privateKey);
+    return currentUser.importPrivateKey(key, remoteUser.privateKey);
   }).then(function(){
+    document.getElementById('getKeys').disabled = false;
+    document.getElementById('getKeys').value = 'Get keys';
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     document.getElementById('userTitle').textContent = currentUser.username+'\'s secrets';
@@ -61,6 +82,8 @@ document.getElementById('getKeys').addEventListener('click', function(e){
     document.getElementById('deco').style.display = '';
     getSecretList(currentUser);
   }, function(err){
+    document.getElementById('getKeys').disabled = false;
+    document.getElementById('getKeys').value = 'Get keys';
     error(document.getElementById('errorLogin'), err);
     throw(err);
   });
@@ -71,12 +94,12 @@ document.getElementById('addSecret').addEventListener('click', function(e){
     var title   = document.getElementById('secretTitle').value;
     var content = document.getElementById('secretContent').value;
     currentUser.createSecret(title, content).then(function(secretObject){
-      return api.addSecret(secretObject);
+      return api.addSecret(currentUser, secretObject);
     }).then(function(msg){
       document.getElementById('secretTitle').value = '';
       document.getElementById('secretContent').value = '';
       document.location.href = '#keys';
-      return api.getKeys(currentUser.username);
+      return api.getKeys(currentUser.username, currentUser.hash);
     }).then(function(keys){
       currentUser.keys = keys;
       getSecretList(currentUser);
@@ -94,12 +117,23 @@ document.getElementById('addSecret').addEventListener('click', function(e){
 
 document.getElementById('changePasswordBtn').addEventListener('click', function(e) {
   var password = document.getElementById('changePasswordInput').value;
-  currentUser.exportPrivateKey(password).then(function(privateKey){
-    return api.changePassword(currentUser, privateKey);
+  var pass = {};
+  document.getElementById('changePasswordBtn').disabled = true;
+  document.getElementById('changePasswordBtn').value = 'Please wait...';
+  derivePassword(password).then(function(dKey){
+    pass.salt = bytesToHexString(dKey.salt);
+    pass.hash = bytesToHexString(dKey.hash);
+    return currentUser.exportPrivateKey(dKey.key);
+  }).then(function(privateKey){
+    return api.changePassword(currentUser, privateKey, pass);
   }).then(function(msg){
+    document.getElementById('changePasswordBtn').disabled = false;
+    document.getElementById('changePasswordBtn').value = 'Change password';
     document.getElementById('changePasswordInput').value = '';
     document.location.href = '#keys';
   }, function(err){
+    document.getElementById('changePasswordBtn').disabled = false;
+    document.getElementById('changePasswordBtn').value = 'Change password';
     alert(err);
     throw(err);
   });
@@ -168,7 +202,7 @@ document.getElementById('share').addEventListener('click', function(e){
     friend = new User(friendName);
     e.target.disabled = true;
     e.target.value = 'Please wait...';
-    return api.getPublicKey(friend.username);
+    return api.getPublicKey(friend.username, 'undefined');
   }).then(function(publicKey){
     return friend.importPublicKey(publicKey);
   }).then(function(){
@@ -194,7 +228,7 @@ document.getElementById('share').addEventListener('click', function(e){
 });
 
 document.getElementById('refresh').addEventListener('click', function(e){
-  api.getKeys(currentUser.username).then(function(keys){
+  api.getKeys(currentUser.username, currentUser.hash).then(function(keys){
     currentUser.keys = keys;
     getSecretList(currentUser);
   }, function(err){
@@ -248,7 +282,7 @@ function unshare(e){
     secret.secret = bytesToHexString(secretObject.secret);
     secret.iv = bytesToHexString(secretObject.iv);
     encryptedSecret.users.forEach(function(hashedUsername){
-      api.getPublicKey(hashedUsername, true).then(function(publicKey){
+      api.getPublicKey(hashedUsername, 'undefined', true).then(function(publicKey){
         friend = new User(hashedUsername);
         return friend.importPublicKey(publicKey);
       }).then(function(){
@@ -326,7 +360,7 @@ function deleteSecret(e){
   var sure = confirm('Are you sure to delete ' + title + '?');
   if(sure){
     api.deleteSecret(currentUser, hashedTitle).then(function(){
-      return api.getKeys(currentUser.username);
+      return api.getKeys(currentUser.username, currentUser.hash);
     }).then(function(keys){
       currentUser.keys = keys;
       getSecretList(currentUser);
@@ -391,6 +425,7 @@ function uiSecret(hashedTitle, title){
   elem.appendChild(titleSpan);
   elem.appendChild(br);
   elem.appendChild(btn);
+
   if(currentUser.keys[hashedTitle].rights > 0){
     elem.appendChild(editBtn);
   }

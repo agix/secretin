@@ -11,19 +11,20 @@ var API = function(link) {
   }
 };
 
-API.prototype.userExists = function(username){
+API.prototype.userExists = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, false).then(function(user){
+  return _this.retrieveUser(username, '', isHashed).then(function(user){
     return true;
   }).catch(function(err){
     return false;
   });
 };
 
-API.prototype.addUser = function(username, privateKey, publicKey){
+API.prototype.addUser = function(username, privateKey, publicKey, pass){
   var _this = this;
   return SHA256(username).then(function(hashedUsername){
     return POST(_this.db+'/user/'+bytesToHexString(hashedUsername),{
+      pass: pass,
       privateKey: privateKey,
       publicKey: publicKey,
       keys: {}
@@ -31,13 +32,16 @@ API.prototype.addUser = function(username, privateKey, publicKey){
   });
 };
 
-API.prototype.addSecret = function(secretObject){
+API.prototype.addSecret = function(user, secretObject){
   var _this = this;
-  return POST(_this.db+'/user/'+secretObject.hashedUsername+'/'+secretObject.hashedTitle,{
-    secret: secretObject.secret,
-    iv: secretObject.iv,
-    title: secretObject.encryptedTitle,
-    key: secretObject.wrappedKey
+  return user.getToken(_this).then(function(token){
+    return POST(_this.db+'/user/'+secretObject.hashedUsername+'/'+secretObject.hashedTitle,{
+      secret: secretObject.secret,
+      iv: secretObject.iv,
+      title: secretObject.encryptedTitle,
+      key: secretObject.wrappedKey,
+      token: bytesToHexString(token)
+    });
   });
 };
 
@@ -128,42 +132,49 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
   });
 };
 
-API.prototype.retrieveUser = function(username, hashed){
+API.prototype.retrieveUser = function(username, hash, isHashed){
   var _this = this;
-  if(hashed){
-    return GET(_this.db+'/user/'+username);
+  if(isHashed){
+    return GET(_this.db+'/user/'+username+'/'+hash);
   }
   else{
     return SHA256(username).then(function(hashedUsername){
-      return GET(_this.db+'/user/'+bytesToHexString(hashedUsername));
+      return GET(_this.db+'/user/'+bytesToHexString(hashedUsername)+'/'+hash);
     });
   }
 };
 
-API.prototype.getWrappedPrivateKey = function(username, hashed){
+API.prototype.getSalt = function(username, hash, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hashed).then(function(user){
+  return _this.retrieveUser(username, hash, isHashed).then(function(user){
+    return user.pass.salt;
+  });
+};
+
+API.prototype.getWrappedPrivateKey = function(username, hash, isHashed){
+  var _this = this;
+  return _this.retrieveUser(username, hash, isHashed).then(function(user){
     return user.privateKey;
   });
 };
 
-API.prototype.getPublicKey = function(username, hashed){
+API.prototype.getPublicKey = function(username, hash, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hashed).then(function(user){
+  return _this.retrieveUser(username, hash, isHashed).then(function(user){
     return user.publicKey;
   });
 };
 
-API.prototype.getKeys = function(username, hashed){
+API.prototype.getKeys = function(username, hash, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hashed).then(function(user){
+  return _this.retrieveUser(username, hash, isHashed).then(function(user){
     return user.keys;
   });
 };
 
-API.prototype.getUser = function(username){
+API.prototype.getUser = function(username, hash, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, false).then(function(user){
+  return _this.retrieveUser(username, hash, isHashed).then(function(user){
     return user;
   });
 };
@@ -173,14 +184,14 @@ API.prototype.getSecret = function(hashedTitle){
   return GET(_this.db+'/secret/'+hashedTitle);
 };
 
-API.prototype.getDb = function(username){
+API.prototype.getDb = function(username, hash, isHashed){
   var _this = this;
   return SHA256(username).then(function(hashedUsername){
-    return GET(_this.db+'/database/'+bytesToHexString(hashedUsername));
+    return GET(_this.db+'/database/'+bytesToHexString(hashedUsername)+'/'+hash);
   });
 };
 
-API.prototype.changePassword = function(user, privateKey){
+API.prototype.changePassword = function(user, privateKey, pass){
   var _this = this;
   var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
@@ -188,6 +199,7 @@ API.prototype.changePassword = function(user, privateKey){
     return user.getToken(_this);
   }).then(function(token){
     return PUT(_this.db+'/user/'+hashedUsername,{
+      pass: pass,
       privateKey: privateKey,
       token: bytesToHexString(token)
     });

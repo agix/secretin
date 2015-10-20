@@ -1,6 +1,7 @@
 var User = function(username) {
   var _this = this;
   _this.username    = username;
+  _this.hash        = null;
   _this.publicKey   = null;
   _this.privateKey  = null;
   _this.keys        = {};
@@ -11,6 +12,7 @@ var User = function(username) {
 User.prototype.disconnect = function(){
   var _this = this;
   delete _this.username;
+  delete _this.hash;
   delete _this.publicKey;
   delete _this.privateKey;
   delete _this.titles;
@@ -57,20 +59,19 @@ User.prototype.importPublicKey = function(jwkPublicKey){
   });
 };
 
-User.prototype.exportPrivateKey = function(password){
+User.prototype.exportPrivateKey = function(dKey){
   var _this = this;
-  return exportPrivateKey(password, _this.privateKey).then(function(privateKeyObject){
+  return exportPrivateKey(dKey, _this.privateKey).then(function(privateKeyObject){
     return {
       privateKey: bytesToHexString(privateKeyObject.privateKey),
-      iv: bytesToHexString(privateKeyObject.iv),
-      salt: bytesToHexString(privateKeyObject.salt)
+      iv: bytesToHexString(privateKeyObject.iv)
     };
   });
 };
 
-User.prototype.importPrivateKey = function(password, privateKeyObject){
+User.prototype.importPrivateKey = function(dKey, privateKeyObject){
   var _this = this;
-  return importPrivateKey(password, privateKeyObject).then(function(privateKey){
+  return importPrivateKey(dKey, privateKeyObject).then(function(privateKey){
     _this.privateKey = privateKey;
   });
 };
