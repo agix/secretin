@@ -117,7 +117,7 @@ When you create a secret, you give a title and a secret content.
 
 The title is salted with the timestamp and encrypted with you public key so you can retrieve its content. It's also SHA256'ed to serve as an ID.
 
-The secret is encrypted using AES-CBC-256 with randomly generated intermediate key.
+The secret is encrypted using AES-GCM-256 with randomly generated intermediate key.
 
 Finally, this intermediate key is wrapped with your public key and linked with the hashed title.
 

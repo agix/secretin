@@ -104,7 +104,7 @@ User.prototype.editSecret = function(secret, wrappedKey){
   var _this = this;
   var result = {};
   return _this.unwrapKey(wrappedKey).then(function(key){
-    return encryptAESCBC256(secret, key);
+    return encryptAESGCM256(secret, key);
   }).then(function(secretObject){
     result.secret = bytesToHexString(secretObject.secret);
     result.iv = bytesToHexString(secretObject.iv);
@@ -138,13 +138,13 @@ User.prototype.createSecret = function(title, secret){
 
 User.prototype.encryptSecret = function(secret){
   var _this = this;
-  return encryptAESCBC256(secret);
+  return encryptAESGCM256(secret);
 };
 
 User.prototype.decryptSecret = function(secret, wrappedKey){
   var _this = this;
   return _this.unwrapKey(wrappedKey).then(function(key){
-    return decryptAESCBC256(secret, key);
+    return decryptAESGCM256(secret, key);
   }).then(function(decryptedSecret){
     return bytesToASCIIString(decryptedSecret);
   });

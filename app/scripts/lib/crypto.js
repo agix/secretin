@@ -21,12 +21,13 @@ function genRSAOAEP(){
   return crypto.subtle.generateKey(algorithm, extractable, keyUsages);
 }
 
-function encryptAESCBC256(secret, key){
+
+function encryptAESGCM256(secret, key){
   var result = {};
   var algorithm = {};
   if(typeof key === 'undefined'){
     algorithm = {
-      name: 'AES-CBC',
+      name: 'AES-GCM',
       length: 256
     };
     var extractable = true;
@@ -34,11 +35,12 @@ function encryptAESCBC256(secret, key){
       'encrypt'
     ];
     return crypto.subtle.generateKey(algorithm, extractable, keyUsages).then(function(key){
-      var iv = new Uint8Array(16);
+      var iv = new Uint8Array(12);
       crypto.getRandomValues(iv);
       algorithm = {
-        name: 'AES-CBC',
-        iv: iv
+        name: 'AES-GCM',
+        iv: iv,
+        tagLength: 128
       };
       var data = asciiToUint8Array(secret);
       result.key = key;
@@ -51,11 +53,12 @@ function encryptAESCBC256(secret, key){
   }
   else{
     result.key = key;
-    var iv = new Uint8Array(16);
+    var iv = new Uint8Array(12);
     crypto.getRandomValues(iv);
     algorithm = {
-      name: 'AES-CBC',
-      iv: iv
+      name: 'AES-GCM',
+      iv: iv,
+      tagLength: 128
     };
     var data = asciiToUint8Array(secret);
     result.iv = iv;
@@ -66,10 +69,11 @@ function encryptAESCBC256(secret, key){
   }
 }
 
-function decryptAESCBC256(secretObject, key){
+function decryptAESGCM256(secretObject, key){
   var algorithm = {
-    name: 'AES-CBC',
-    iv: hexStringToUint8Array(secretObject.iv)
+    name: 'AES-GCM',
+    iv: hexStringToUint8Array(secretObject.iv),
+    tagLength: 128
   };
   var data = hexStringToUint8Array(secretObject.secret);
   return crypto.subtle.decrypt(algorithm, key, data);
@@ -110,7 +114,7 @@ function unwrapRSAOAEP(wrappedKeyHex, unwrappingPrivateKey){
     hash: {name: 'SHA-256'}
   };
   var unwrappedKeyAlgorithm  = {
-    name: 'AES-CBC',
+    name: 'AES-GCM',
     length: 256
   };
   var extractable = true;
