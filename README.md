@@ -141,9 +141,9 @@ It takes username string as creation argument.
   * it returns publicKey a jwk publicKey object
 * *importPublicKey* takes jwk publicKey object in argument and populate user publicKey
   * it returns nothing
-* *exportPrivateKey* takes password string in argument and encrypt privateKey
+* *exportPrivateKey* takes derivedKey Uint8Array in argument and encrypt privateKey
   * it returns `{privateKey: hexString, iv: hexString}` object
-* *importPrivateKey* takes password string and `{privateKey: hexString, iv: hexString}` object in argument and populate user privateKey
+* *importPrivateKey* takes derivedKey Uint8Array and `{privateKey: hexString, iv: hexString}` object in argument and populate user privateKey
   * it returns nothing
 * *createSecret* takes title and secret string arguments, encrypt secret with random key wrapped with publicKey and encrypt title with publicKey
   * it returns `{secret: hexString, iv: hexString, wrappedKey: hexString, encryptedTitle: hexString, hashedUsername: hexString, hashedTitle: hexString}`
