@@ -101,7 +101,7 @@ The only thing you are forced to trust is your browser (and I hope you do becaus
 
 Another point secret-in is trying to handle is secrets sharing.
 
-The whole things try to respect maximum anonymity. We want database leakage to be a feature so no datas should be usable without your keys.
+The whole things try to respect maximum anonymity. We want database leakage to be a feature so no datas should be usable without your keys (not even metadata like username or secret title).
 ## Details
 This part try to explain the whole operation behind secret-in.
 
@@ -109,7 +109,9 @@ First, you need username and master password.
 
 When you create a new account, username is SHA256'ed and a RSA-OAEP key pair is generated (according to http://www.w3.org/TR/WebCryptoAPI/#algorithm-overview array, RSA-OAEP seems to be the only assymetric algorithm that support encrypt and decrypt method)
 
-Then your private key is wrapped with SHA256 of your master password in AES-CBC-256.
+Then your private key is wrapped with AES-CBC-256 and a derivedKey from your master password.
+
+As PBKDF2 is not supported yet on Chrome and Firefox, the key comes from 10 000 iterations of SHA256 on (masterPassword+random32BytesSALT)
 
 When you create a secret, you give a title and a secret content.
 
@@ -118,6 +120,10 @@ The title is salted with the timestamp and encrypted with you public key so you 
 The secret is encrypted using AES-CBC-256 with randomly generated intermediate key.
 
 Finally, this intermediate key is wrapped with your public key and linked with the hashed title.
+
+Another layer of authentication is added on server side. The derived key is SHA256'ed (again) and sent to the server that compare the SHA256 of it with the hash it saved when you created your account.
+
+This way the key is hard to BF, doesn't travel in clear on the wires and are not known by the server.
 
 Any time you want to access a secret, you need to type your master password that would decrypt your private key that would decrypt the intermediate key that would decrypt the secret.
 
@@ -157,33 +163,35 @@ It takes username string as creation argument.
   * it returns nothing
 ### SAVE API
 API object takes server url for server saved version and `{users: {}, secrets: {}}` for standalone version.
-* *userExists* takes username string as argument.
+* *userExists* takes username string or hashedUsername hexString as argument plus an argument to say if it's hashed.
   * it returns true or false if user exists or not.
-* *addUser* takes username string, `{privateKey: hexString, iv: hexString}` object and jwk publicKey object arguments. It adds the user to the DB.
+* *addUser* takes username string, `{privateKey: hexString, iv: hexString}` object, jwk publicKey object and `{salt: hexString, hash: hexString}` arguments. It adds the user to the DB (the hash is SHA256'ed on the DB).
   * it returns nothing.
-* *addSecret* takes `{secret: hexString, iv: hexString, wrappedKey: hexString, encryptedTitle: hexString, hashedUsername: hexString, hashedTitle: hexString}` object argument. It adds the secret to the DB.
+* *addSecret* takes user object and `{secret: hexString, iv: hexString, wrappedKey: hexString, encryptedTitle: hexString, hashedUsername: hexString, hashedTitle: hexString}` object argument. It adds the secret to the DB using challenge to authenticate the user.
   * it returns nothing.
-* *deleteSecret* takes user object and hashedTitle hexString arguments. It deletes the secret corresponding to the hashedTitle.
+* *deleteSecret* takes user object and hashedTitle hexString arguments. It deletes the secret corresponding to the hashedTitle using challenge to authenticate the user.
   * it returns nothing
-* *editSecret* takes user object, `{secret: hexString, iv: hexString}` object and hashedTitle hexString arguments. It edits the secret.
+* *editSecret* takes user object, `{secret: hexString, iv: hexString}` object and hashedTitle hexString arguments. It edits the secret using challenge to authenticate the user.
   * it returns nothing
-* *unshareSecret* takes user object, friendName string and hashedTitle hexString. It unshares secret for friendName. Be careful, it doesn't renew the intermediate keys for the other.
+* *unshareSecret* takes user object, friendName string, hashedTitle hexString and hashedFriendName hexString. It unshares secret for friendName using challenge to authenticate the user. Be careful, it doesn't renew the intermediate keys for the other.
   * it returns nothing
-* *newKey* takes user object, hashedTitle hexString, `{secret: hexString, iv: hexString}` object and array of `{user: hexString, key: hexString}` objects arguments. It's used when intermediate key is changed (when secret unsharing for example).
+* *newKey* takes user object, hashedTitle hexString, `{secret: hexString, iv: hexString}` object and array of `{user: hexString, key: hexString}` objects arguments. It's used when intermediate key is changed (when secret unsharing for example) and use challenge to authenticate the user.
   * it returns nothing
-* *shareSecret* takes user object, `{wrappedKey: hexString, encryptedTitle: hexString, friendName: hexString}` object, hashedTitle hexString and rights (0=read, 1=+write, 2=+share) arguments. It shares secret with friendName.
+* *shareSecret* takes user object, `{wrappedKey: hexString, encryptedTitle: hexString, friendName: hexString}` object, hashedTitle hexString and rights (0=read, 1=+write, 2=+share) arguments. It shares secret with friendName using challenge to authenticate the user.
   * it returns nothing
 * *getPublicKey* takes username string or username hexString and boolean to say if it's hashed in arguments.
   * it returns jwk publicKey object.
-* *getWrappedPrivateKey* takes username string or username hexString and boolean to say if it's hashed in arguments.
+* *getWrappedPrivateKey* takes username string or username hexString, derived key hash hexString and boolean to say if it's hashed in arguments.
   * it returns `{privateKey: hexString, iv: hexString}` object
-* *getKeys* takes username string or username hexString and boolean to say if it's hashed in arguments.
+* *getSalt* takes username string or username hexString, derived key hash hexString and boolean to say if it's hashed in arguments.
+  * it returns salt hexString.
+* *getKeys* takes username string or username hexString, derived key hash hexString  and boolean to say if it's hashed in arguments.
   * it returns list of `{hashedTitle: {title: hexString, key: hexString, right: int}}`
-* *getUser* takes username string or username hexString and boolean to say if it's hashed in arguments. It's like getPublicKey, getWrappedPrivateKey and getKeys combined.
+* *getUser* takes username string or username hexString, derived key hash hexString  and boolean to say if it's hashed in arguments. It's like getPublicKey, getWrappedPrivateKey, getKeys and getSalt combined.
   * it returns `{privateKey: {privateKey: hexString, iv: hexString}, publicKey: jwkObject, keys: {hashedTitle01: {title: hexString, key: hexString, right: int}}}`
 * *getSecret* it takes hashedTitle hexString argument.
   * it returns secret hexString
-* *changePassword* takes user object and `{privateKey: {privateKey: hexString, iv: hexString}` arguments. It changes the master password that wraps the privateKey
+* *changePassword* takes user object and `{privateKey: {privateKey: hexString, iv: hexString}` arguments. It changes the master password that wraps the privateKey using challenge to authenticate the user.
   * it returns nothing
-* *getDB* takes username string.
+* *getDB* takes username string or username hexString, derived key hash hexString and boolean to say if it's hashed in arguments.
   * it returns the whole database used by username.

@@ -144,9 +144,9 @@ API.prototype.retrieveUser = function(username, hash, isHashed){
   }
 };
 
-API.prototype.getSalt = function(username, hash, isHashed){
+API.prototype.getSalt = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hash, isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return user.pass.salt;
   });
 };
@@ -158,9 +158,9 @@ API.prototype.getWrappedPrivateKey = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getPublicKey = function(username, hash, isHashed){
+API.prototype.getPublicKey = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hash, isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return user.publicKey;
   });
 };

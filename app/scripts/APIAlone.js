@@ -37,9 +37,12 @@ API.prototype.addUser = function(username, privateKey, publicKey, pass){
   });
 };
 
-API.prototype.addSecret = function(secretObject){
+API.prototype.addSecret = function(user, secretObject){
   var _this = this;
-  return new Promise(function(resolve, reject){
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
     if(typeof _this.db.users[secretObject.hashedUsername] !== 'undefined'){
       if(typeof _this.db.secrets[secretObject.hashedTitle] === 'undefined'){
         _this.db.secrets[secretObject.hashedTitle] = {
@@ -53,14 +56,13 @@ API.prototype.addSecret = function(secretObject){
           rights: 2
         }
         _this.textarea.value = JSON.stringify(_this.db);
-        resolve();
       }
       else{
-        reject('Secret already exists');
+        throw('Secret already exists');
       }
     }
     else{
-      reject('User not found');
+      throw('User not found');
     }
   });
 }
@@ -280,9 +282,9 @@ API.prototype.retrieveUser = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getSalt = function(username, hash, isHashed){
+API.prototype.getSalt = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hash, isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return user.pass.salt;
   });
 };
@@ -294,9 +296,9 @@ API.prototype.getWrappedPrivateKey = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getPublicKey = function(username, hash, isHashed){
+API.prototype.getPublicKey = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, hash, isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return user.publicKey;
   });
 };

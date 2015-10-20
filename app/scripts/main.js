@@ -27,6 +27,7 @@ document.getElementById('newUser').addEventListener('click', function(e) {
         result.publicKey = publicKey;
         return api.addUser(currentUser.username, result.privateKey, result.publicKey, pass);
       }).then(function(msg){
+        document.location.href = '#keys';
         document.getElementById('newUser').disabled = false;
         document.getElementById('newUser').value = 'Generate';
         document.getElementById('newUsername').value = '';
@@ -57,7 +58,7 @@ document.getElementById('getKeys').addEventListener('click', function(e){
   var hash;
   document.getElementById('getKeys').disabled = true;
   document.getElementById('getKeys').value = 'Please wait...';
-  api.getSalt(username, 'undefined').then(function(salt){
+  api.getSalt(username).then(function(salt){
     return derivePassword(password, salt);
   }).then(function(dKey){
     key = dKey.key;
@@ -202,7 +203,7 @@ document.getElementById('share').addEventListener('click', function(e){
     friend = new User(friendName);
     e.target.disabled = true;
     e.target.value = 'Please wait...';
-    return api.getPublicKey(friend.username, 'undefined');
+    return api.getPublicKey(friend.username);
   }).then(function(publicKey){
     return friend.importPublicKey(publicKey);
   }).then(function(){
@@ -282,7 +283,7 @@ function unshare(e){
     secret.secret = bytesToHexString(secretObject.secret);
     secret.iv = bytesToHexString(secretObject.iv);
     encryptedSecret.users.forEach(function(hashedUsername){
-      api.getPublicKey(hashedUsername, 'undefined', true).then(function(publicKey){
+      api.getPublicKey(hashedUsername, true).then(function(publicKey){
         friend = new User(hashedUsername);
         return friend.importPublicKey(publicKey);
       }).then(function(){
