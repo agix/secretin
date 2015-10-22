@@ -4,10 +4,7 @@ var API = function(link) {
     _this.db = link;
   }
   else{
-    var http = location.protocol;
-    var port = location.port;
-    var slashes = http.concat("//");
-    _this.db = slashes.concat(window.location.hostname+':'+port);
+    _this.db = window.location.origin;
   }
 };
 
