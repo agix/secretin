@@ -1,4 +1,7 @@
-OPTIONAL_SALT = '';
+
+// ###################### API.js ######################
+
+var OPTIONAL_SALT = '';
 
 var API = function(link) {
   if(typeof link === 'object'){
@@ -12,7 +15,7 @@ var API = function(link) {
 
 API.prototype.userExists = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, '', isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return true;
   }).catch(function(err){
     return false;

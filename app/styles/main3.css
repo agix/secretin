@@ -1,0 +1,407 @@
+body{
+    background-color: #4C27E5;
+    color: #2709A0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#menu {
+    width: 100%;
+    list-style-type:none;
+    text-align: center;
+    margin: auto;
+    padding:0;
+    position: absolute;
+}
+
+#content {
+    width: 100%;
+    position: absolute;
+    top: 100px;
+}
+
+.level-1 {
+    width: 24%;
+    margin: auto;
+    display:inline-block;
+    float: left;
+    margin-right: 1px;
+}
+
+.level-1 > a {
+    display:block;
+    min-width:140px;
+    height: 50px;
+    text-align: center;
+    line-height: 50px;
+    color: #6B4CE9;
+    background: #360CE1;
+    text-decoration: none;
+}
+
+.level-1.hover > a, .level-1:hover > a {
+    background: #8D75ED;
+    color: #2709A0;
+}
+
+.widget {
+  position: relative;
+  margin: auto;
+  width: 700px;
+  top: 50px;
+  background-color: #6B4CE9;
+  padding-bottom: 30px;
+}
+
+.widget div{
+    display: block;
+    -webkit-margin-before: 1em;
+    -webkit-margin-after: 1em;
+    -webkit-margin-start: 0px;
+    -webkit-margin-end: 0px;
+}
+
+.widget-tabs {
+  position: absolute;
+  top: -52px;
+  left: 0;
+  right: 0;
+  text-align: left;
+  /* Make the last tab in the DOM the left-most tab on the screen.
+     That way we can activate it by default and still be able to
+     deactivate it later using the ~ selector. */
+  direction: rtl;
+}
+
+.widget-tab,
+.widget-list:target:first-of-type ~ .widget-tabs > .widget-tab:first-child ~ .widget-tab,
+.widget-list:target:nth-of-type(2) ~ .widget-tabs > .widget-tab:nth-child(2) ~ .widget-tab,
+.widget-list:target:last-of-type ~ .widget-tabs > .widget-tab:last-child ~ .widget-tab {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  min-width: 25%;
+  border-radius: 12px 12px 0 0;
+  line-height: 36px;
+  font-weight: normal;
+  color: #2709A0;
+  background: #8D75ED;
+}
+.widget-tab > .widget-tab-link,
+.widget-list:target:first-of-type ~ .widget-tabs > .widget-tab:first-child ~ .widget-tab > .widget-tab-link,
+.widget-list:target:nth-of-type(2) ~ .widget-tabs > .widget-tab:nth-child(2) ~ .widget-tab > .widget-tab-link,
+.widget-list:target:last-of-type ~ .widget-tabs > .widget-tab:last-child ~ .widget-tab > .widget-tab-link {
+  margin: 0;
+  border-top: 0;
+}
+
+.widget-tab + .widget-tab {
+  margin-right: 5px;
+}
+
+.widget-tab:last-child,
+.widget-list:target:first-of-type ~ .widget-tabs > .widget-tab:first-child,
+.widget-list:target:nth-of-type(2) ~ .widget-tabs > .widget-tab:nth-child(2),
+.widget-list:target:last-of-type ~ .widget-tabs > .widget-tab:last-child {
+  margin-top: 0;
+  line-height: 36px;
+  color: #2709A0;
+  background: #6B4CE9;
+  border-top: 0;
+}
+
+/* Deactivate the default tab when a preceding tab is activated. */
+.widget-tab-link {
+  display: block;
+  min-width: 60px;
+  padding: 0 15px;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.widget-list {
+  display: none;
+  padding-top:10px;
+  padding-right: 40px;
+  padding-left: 40px;
+  /* The last list is activated (visible) by default. */
+}
+
+.widget-list:last-of-type {
+  display: block;
+}
+.widget-list:target {
+  display: block;
+  /* Hide the default list when another is activated. */
+  /* First list activates the first tab, second list activates the second tab, etc. */
+}
+.widget-list:target ~ .widget-list {
+  display: none;
+}
+
+input[type="text"], input[type="password"] {
+  padding: 10px;
+  border: solid 5px #8D75ED;
+  transition: border 0.3s;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+  border: solid 5px #360CE1;
+}
+
+.btn {
+    margin-left: 30px;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0px;
+    color: #8D75ED;
+    background: #2709A0;
+    padding: 10px 20px 10px 20px;
+    border: solid #4C27E5 5px;
+    transition: border 0.3s;
+    text-decoration: none;
+    cursor: pointer
+}
+
+.btn:hover {
+  background: #ffffff;
+  text-decoration: none;
+  border: solid #6B4CE9 5px;
+}
+
+.btn2, .secretElem input[type="button"]{
+    margin-left: 10px;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0px;
+    color: #8D75ED;
+    background: #2709A0;
+    padding: 5px 10px 5px 10px;
+    border: solid #4C27E5 5px;
+    transition: border 0.3s;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.btn2:hover, .secretElem input[type="button"]:hover {
+  background: #ffffff;
+  text-decoration: none;
+  border: solid #6B4CE9 5px;
+}
+
+.btn3 {
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0px;
+    color: #719CEB;
+    background: #073B9A;
+    padding: 5px 10px 5px 10px;
+    border: solid #2166E3 5px;
+    transition: border 0.3s;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.btn3:hover {
+  background: #ffffff;
+  text-decoration: none;
+  border: solid #4880E7 5px;
+}
+
+h2 {
+    display: inline-block;
+}
+
+.separator, .separator2{
+    display:block;
+    border:none;
+    color:white;
+    height:1px;
+    background:black;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    background: -webkit-gradient(radial, 50% 50%, 0, 50% 50%, 350, from(#2709A0), to(#8D75ED));
+}
+
+.separator2{
+    background: -webkit-gradient(radial, 50% 50%, 0, 50% 50%, 350, from(#5F049C), to(#B86CEB));
+}
+
+.overlay, .overlay2 {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(16, 49, 109 , 0.7);
+  transition: opacity 500ms;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.overlay2 {
+    background: rgba(70, 12, 110, 0.7);
+}
+
+.overlay:target, .overlay2:target {
+  visibility: visible;
+  opacity: 1;
+}
+
+.popup, .popup2 {
+    text-align: center;
+    margin: 200px auto;
+    padding: 20px;
+    background: #2166E3;
+    border-radius: 5px;
+    width: 40%;
+    position: relative;
+    transition: all 500ms ease-in-out;
+}
+
+.popup2 {
+    text-align: left;
+    background: #9219E4;
+}
+
+.popup h2, .popup2 h2 {
+  margin-top: 0;
+  color: #719CEB;
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.popup2 h2 {
+    color: #B86CEB;
+}
+
+.popup .close, .popup2 .close {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  transition: all 200ms;
+  font-size: 30px;
+  font-weight: bold;
+  text-decoration: none;
+  color: #719CEB;
+  cursor: pointer;
+}
+
+.popup2 .close {
+    color: #B86CEB;
+}
+
+.popup .close:hover {
+    color: #D4D46A;
+}
+
+.popup2 .close:hover {
+    color: #D4B16A;
+}
+
+.popup .content, .popup2 .content {
+  max-height: 30%;
+  overflow: auto;
+}
+
+#secretTitle, #secretContent, #showSecretContent, #editSecretContent {
+    border: solid 5px #4880E7;
+}
+
+#secretTitle:focus, #showSecretContent:focus, #editSecretContent:focus, #secretContent:focus {
+    border: solid 5px #073B9A;
+}
+
+#friendName{
+    border: solid 5px #A441E7;
+}
+
+#rights{
+    padding: 10px;
+    border: solid 5px #A441E7;
+    transition: border 0.3s;
+}
+
+#friendName:focus, #rights:focus{
+    border: solid 5px #5F049C;
+}
+
+.secretContent {
+    margin-top:20px;
+    margin-bottom:20px;
+    width: 90%;
+    height: 100px;
+}
+
+.error{
+    color: #D4D46A;
+}
+
+.secretElem {
+    text-align: center;
+    list-style-type:none;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid #2709A0;
+    border-bottom-style: none;
+}
+
+.secretElem:last-child{
+    border-bottom-style: solid;
+}
+
+#sharedUsers{
+    padding-left: 0px;
+}
+
+#sharedUsers input[type="button"], #share{
+    margin-left: 10px;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0px;
+    color: #B86CEB;
+    background: #5F049C;
+    padding: 5px 10px 5px 10px;
+    border: solid #9219E4 5px;
+    transition: border 0.3s;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+#share{
+    padding: 10px 20px 10px 20px;
+}
+
+#sharedUsers input[type="button"]:hover, #share:hover {
+  background: #ffffff;
+  text-decoration: none;
+  border: solid #A441E7 5px;
+}
+
+.sharedUserElem{
+    list-style-type:none;
+}
+
+.sharedUserElem span {
+    font-size: 0.9em;
+    font-family: monospace;
+}
+
+.secretElem span {
+    display: inline-block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#refresh {
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+#refresh:hover {
+    font-size: 1.1em;
+}

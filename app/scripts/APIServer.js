@@ -1,3 +1,6 @@
+
+// ###################### API.js ######################
+
 var API = function(link) {
   var _this = this;
   if(link){
@@ -10,7 +13,7 @@ var API = function(link) {
 
 API.prototype.userExists = function(username, isHashed){
   var _this = this;
-  return _this.retrieveUser(username, '', isHashed).then(function(user){
+  return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
     return true;
   }).catch(function(err){
     return false;

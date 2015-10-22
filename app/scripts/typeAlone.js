@@ -12,4 +12,7 @@ document.getElementById('db').addEventListener('change', function(e) {
   }
 });
 
+var api = new API();
+var currentUser = {};
+
 });

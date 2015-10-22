@@ -13,16 +13,21 @@ gulp.task('buildLocal', function() {
     .pipe(build())
     .pipe(gulp.dest('dist'))
 
-  gulp.src(['app/scripts/main.js', 'app/scripts/typeAlone.js'])
+
+  gulp.src(
+    [
+      'app/scripts/main.js',
+      'app/scripts/User.js',
+      'app/scripts/APIAlone.js',
+      'app/scripts/lib/**',
+      'app/scripts/typeAlone.js'
+    ]
+  )
     .pipe(concat('main.js'))
     .pipe(gulp.dest('dist/scripts'));
-  gulp.src('app/scripts/User.js')
+
+  gulp.src('app/scripts/attack.js')
     .pipe(gulp.dest('dist/scripts'));
-  gulp.src('app/scripts/APIAlone.js')
-    .pipe(rename('API.js'))
-    .pipe(gulp.dest('dist/scripts'));
-  gulp.src('app/scripts/lib/**')
-    .pipe(gulp.dest('dist/scripts/lib'));
 
   gulp.src('app/styles/**')
     .pipe(gulp.dest('server/client/alone/styles'));
@@ -39,28 +44,31 @@ gulp.task('buildServ', function() {
     .pipe(build())
     .pipe(gulp.dest('server/client'))
 
-  gulp.src(['app/scripts/main.js', 'app/scripts/typeServer.js'])
+  gulp.src(
+    [
+      'app/scripts/main.js',
+      'app/scripts/User.js',
+      'app/scripts/APIServer.js',
+      'app/scripts/lib/**',
+      'app/scripts/typeServer.js'
+    ]
+  )
     .pipe(concat('main.js'))
     .pipe(gulp.dest('server/client/scripts'));
-  gulp.src('app/scripts/User.js')
-    .pipe(gulp.dest('server/client/scripts'));
-  gulp.src('app/scripts/APIServer.js')
-    .pipe(rename('API.js'))
-    .pipe(gulp.dest('server/client/scripts'));
-  gulp.src('app/scripts/lib/**')
-    .pipe(gulp.dest('server/client/scripts/lib'));
 
   gulp.src('app/styles/**')
     .pipe(gulp.dest('server/client/styles'));
 });
 
 gulp.task('watch', function() {
-  gulp.watch(['app/scripts/**'], ['buildLocal', 'buildServ']);
-  gulp.watch(['app/styles/**'], ['buildLocal', 'buildServ']);
-  gulp.watch(['app/*.html'], ['buildLocal', 'buildServ']);
+  gulp.watch(['app/scripts/**'], ['build']);
+  gulp.watch(['app/styles/**'], ['build']);
+  gulp.watch(['app/*.html'], ['build']);
 });
 
-gulp.task('default', ['buildLocal', 'buildServ', 'watch']);
+gulp.task('build', ['buildLocal', 'buildServ']);
+
+gulp.task('default', ['build', 'watch']);
 
 gulp.task('jshint', function() {
   gulp.src('app/scripts/APIServ.js')
@@ -85,13 +93,13 @@ gulp.task('jshint', function() {
 });
 
 gulp.task('deploy', function() {
-  gulp.src(['server/clien*/**', 'server/index.js', 'server/install.js', 'server/package.json'])
-    .pipe(tar('secretin.tar'))
-    .pipe(gzip())
-    .pipe(gulp.dest('./'));
-
   gulp.src('server/client/alon*/**')
     .pipe(tar('secretinAlone.tar'))
     .pipe(gzip())
     .pipe(gulp.dest('server/client'));
+
+  gulp.src(['server/clien*/**', 'server/index.js', 'server/install.js', 'server/package.json'])
+    .pipe(tar('secretin.tar'))
+    .pipe(gzip())
+    .pipe(gulp.dest('./'));
 });

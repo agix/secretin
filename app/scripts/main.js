@@ -1,8 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
 
-var api = new API();
-var currentUser = {};
-
 document.getElementById('newUser').addEventListener('click', function(e) {
   var btn = e.target;
   var username = document.getElementById('newUsername').value;

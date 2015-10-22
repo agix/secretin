@@ -1,3 +1,6 @@
+
+// ###################### User.js ######################
+
 var User = function(username) {
   var _this = this;
   _this.username    = username;

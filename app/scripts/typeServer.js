@@ -17,4 +17,7 @@ document.getElementById('getDb').addEventListener('click', function(e) {
   }
 });
 
+var api = new API();
+var currentUser = {};
+
 });

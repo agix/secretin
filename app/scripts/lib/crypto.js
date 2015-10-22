@@ -1,3 +1,6 @@
+
+// ###################### crypto.js ######################
+
 function SHA256(str){
   var algorithm = 'SHA-256';
   var data = asciiToUint8Array(str);
