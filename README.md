@@ -111,7 +111,7 @@ When you create a new account, username is SHA256'ed and a RSA-OAEP key pair is 
 
 Then your private key is wrapped with AES-CBC-256 and a derivedKey from your master password.
 
-As PBKDF2 is not supported yet on Chrome and Firefox, the key comes from 10 000 iterations of SHA256 on (masterPassword+random32BytesSALT)
+The derivedKey use PBKDF2 with SHA-256, 256 bits random salt and 10 000 iterations.
 
 When you create a secret, you give a title and a secret content.
 
@@ -121,7 +121,7 @@ The secret is encrypted using AES-GCM-256 with randomly generated intermediate k
 
 Finally, this intermediate key is wrapped with your public key and linked with the hashed title.
 
-Another layer of authentication is added on server side. The derived key is SHA256'ed (again) and sent to the server that compare the SHA256 of it with the hash it saved when you created your account.
+Another layer of authentication is added on server side. The derived key is SHA256'ed and sent to the server that compare the SHA256 of it with the hash it saved when you created your account.
 
 This way the key is hard to BF, doesn't travel in clear on the wires and are not known by the server.
 
