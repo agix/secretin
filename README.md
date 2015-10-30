@@ -4,7 +4,7 @@ Open source secret manager with groups managment based on webapi crypto http://w
 **No dependencies**, only "vanilla" JS
 
 Exists in two versions :
-* Standalone (you have to copy paste you json DB)
+* Standalone (you have to copy paste your json DB)
 * Server saved (CouchDB save your encrypted DB)
 
 # Install
