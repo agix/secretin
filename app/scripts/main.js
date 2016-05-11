@@ -229,6 +229,7 @@ document.getElementById('share').addEventListener('click', function(e){
 });
 
 document.getElementById('refresh').addEventListener('click', function(e){
+  document.getElementById('search').value = '';
   api.getKeys(currentUser.username, currentUser.hash).then(function(keys){
     currentUser.keys = keys;
     getSecretList(currentUser);
@@ -236,6 +237,24 @@ document.getElementById('refresh').addEventListener('click', function(e){
     alert(err);
     throw(err);
   });
+});
+
+document.getElementById('search').addEventListener('keyup', function(e){
+  var elems = document.querySelectorAll('.secretElem');
+  for (var i = 0; i < elems.length; i++) {
+    if(e.target.value.length > 2 && elems[i].children[1].textContent.toLowerCase().indexOf(e.target.value.toLowerCase()) === -1){
+      elems[i].style.display = 'none';
+    }
+    else{
+      elems[i].style.display = '';
+    }
+  }
+});
+
+document.getElementById('password').addEventListener('keypress', function(e){
+  if(e.keyCode === 13){
+    document.getElementById('getKeys').click();
+  }
 });
 
 function error(elem, text){
@@ -256,6 +275,7 @@ function destroyUser(user){
     secretsList.removeChild(oldElems[i]);
   }
   document.getElementById('userTitle').textContent = 'Not connected';
+  document.getElementById('search').value = '';
   document.getElementById('secrets').style.display = 'none';
   document.getElementById('login').style.display = '';
   document.getElementById('deco').style.display = 'none';
@@ -450,3 +470,4 @@ function getSecretList(){
     });
   });
 }
+

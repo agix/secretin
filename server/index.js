@@ -639,7 +639,13 @@ app.post('/share/:name/:title', function (req, res) {
   });
 });
 
-var server = app.listen(3000, '127.0.0.1', function () {
+var port = 3000;
+
+if(process.argv.length === 3){
+    port = parseInt(process.argv[2]);
+}
+
+var server = app.listen(port, '127.0.0.1', function () {
 
   var host = server.address().address;
   var port = server.address().port;

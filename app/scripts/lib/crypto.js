@@ -1,4 +1,6 @@
-
+if(typeof(crypto.subtle) === 'undefined'){
+    crypto.subtle = crypto.webkitSubtle;
+}
 // ###################### crypto.js ######################
 
 function SHA256(str){
