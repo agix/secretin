@@ -88,6 +88,16 @@ esac
 exit 0
 ```
 
+## Build yourself
+You need to install gulp
+
+```
+npm install
+gulp &
+google-chrome dist/index.html
+```
+
+You can use `gulp deploy` to create tar.gz archives (secretin.tar.gz for server version and server/client/secretinAlone.tar.gz for stand alone)
 
 # How it works
 ## Introduction
