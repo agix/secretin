@@ -1,3 +1,6 @@
+if(typeof(crypto) === 'undefined'){
+    crypto = msCrypto;
+}
 if(typeof(crypto.subtle) === 'undefined'){
     crypto.subtle = crypto.webkitSubtle;
 }

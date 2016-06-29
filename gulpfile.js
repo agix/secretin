@@ -26,11 +26,11 @@ gulp.task('buildLocal', function() {
     .pipe(concat('main.js'))
     .pipe(gulp.dest('dist/scripts'));
 
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('dist/styles'));
+
   gulp.src('app/scripts/attack.js')
     .pipe(gulp.dest('dist/scripts'));
-
-  gulp.src('app/styles/**')
-    .pipe(gulp.dest('server/client/alone/styles'));
 
   gulp.src('dist/**')
     .pipe(gulp.dest('server/client/alone'));
