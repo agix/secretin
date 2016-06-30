@@ -18,6 +18,7 @@ gulp.task('buildLocal', function() {
     [
       'app/scripts/main.js',
       'app/scripts/User.js',
+      'app/scripts/Secret.js',
       'app/scripts/APIAlone.js',
       'app/scripts/lib/**',
       'app/scripts/typeAlone.js'
