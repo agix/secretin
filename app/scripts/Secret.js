@@ -18,14 +18,12 @@ Secret.prototype.populateFields = function() {
   try {
     var content   = JSON.parse(_this.content);
 
-    _this.version = content.version;
-    _this.type    = content.type;
+    _this.version = 1;
     _this.fields  = content.fields;
   }
   catch(e) {
     // Secret content is not JSON : legacy version
     _this.version = 0;
-    _this.type    = "single";
     _this.fields  = null;
   }
 

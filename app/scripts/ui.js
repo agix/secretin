@@ -64,3 +64,51 @@ function uiSecret(hashedTitle, title){
 
   return elem;
 }
+
+function uiSecretFields(secret) {
+
+  if(secret.version == 0) {
+    return uiLegacySecret(secret);
+  }
+  else {
+    return uiMultipleSecretFields(secret);
+  }
+}
+
+function uiLegacySecret(secret) {
+
+  var textarea = document.createElement('textarea');
+  textarea.classList.add('secretContent');
+  textarea.id = 'showSecretText';
+  textarea.disabled = true;
+  textarea.value = secret.content;
+
+  return textarea;
+}
+
+function uiMultipleSecretFields(secret) {
+
+  var list = document.createElement('ul');
+  list.id = 'showSecretFields';
+
+  for(var f in secret.fields) {
+
+    var field = secret.fields[f];
+
+    var row = document.createElement('li');
+
+    var label = document.createElement('label');
+    label.textContent = field['label'];
+    row.appendChild(label);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = field['content'];
+    input.readonly = true;
+    row.appendChild(input);
+
+    list.appendChild(row);
+  }
+
+  return list;
+}

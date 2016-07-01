@@ -95,7 +95,20 @@
         <a class="close" href="#keys">×</a>
         <div class="content">
           <input type="text" id="secretTitle" placeholder="Secret title"/><br />
-          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><br />
+          <form id="secretFields">
+            <div class="form-inline">
+              <label for="fieldValue">Label :</label>
+              <input type="text" id="secretContent" placeholder="totolol">
+            </div>
+            <div class="form-inline">
+              <label for="fieldValue2">Label :</label>
+              <input type="text" id="secretContent2" placeholder="totolol">
+            </div>
+            <div class="form-inline">
+              <label for="fieldValue3">Label :</label>
+              <input type="text" id="secretContent3" placeholder="totolol">
+            </div>
+          </form>
           <input type="button" class="btn3" id="addSecret" value="Add secret" />
         </div>
       </div>
@@ -104,8 +117,7 @@
     <div id="showSecret" class="overlay">
       <div class="popup">
         <h2 id="showSecretTitle"></h2>
-        <div class="content">
-          <textarea class="secretContent" id="showSecretContent" disabled></textarea><br />
+        <div class="content" id="showSecretContent">
           <input type="button" class="btn3" id="hideSecret" value="Hide" />
         </div>
       </div>
