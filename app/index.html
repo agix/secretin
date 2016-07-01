@@ -68,8 +68,8 @@
         </span>
         <span id="secrets" style="display:none">
           <h2 id="userTitle">Not connected</h2>
-          <a class="btn2" href="#addSecretPopup">Add secret</a>
-          <a class="btn2" href="#changePassword">Change password</a>
+          <a id="addSecretPopupA" class="btn2" href="#addSecretPopup">Add secret</a>
+          <a id="changePasswordA" class="btn2" href="#changePassword">Change password</a>
           <input type="button" class="btn2" id="deco" value="Disconnect"/>
           <span class="separator"></span>
           <h3>Secrets list <a id="refresh">↺</a></h3>
@@ -95,7 +95,7 @@
         <a class="close" href="#keys">×</a>
         <div class="content">
           <input type="text" id="secretTitle" placeholder="Secret title"/><br />
-          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><br />
+          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><a class="icon" id="generatePwd" title="Generate Password">⚙</a><br />
           <input type="button" class="btn3" id="addSecret" value="Add secret" />
         </div>
       </div>
@@ -105,7 +105,7 @@
       <div class="popup">
         <h2 id="showSecretTitle"></h2>
         <div class="content">
-          <textarea class="secretContent" id="showSecretContent" disabled></textarea><br />
+          <textarea class="secretContent" id="showSecretContent" readonly></textarea><a class="icon" id="copy" title="Copy">❐</a><br />
           <input type="button" class="btn3" id="hideSecret" value="Hide" />
         </div>
       </div>
@@ -117,7 +117,7 @@
         <a class="close" id="closeEditSecret">×</a>
         <div class="content">
           <input type="hidden" id="editSecretHash" />
-          <textarea class="secretContent" id="editSecretContent"></textarea><br />
+          <textarea class="secretContent" id="editSecretContent"></textarea><a class="icon" id="editGeneratePwd" title="Generate Password">⚙</a><br />
           <input type="button" class="btn3" id="saveSecret" value="Save" />
         </div>
       </div>

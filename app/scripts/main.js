@@ -239,6 +239,28 @@ document.getElementById('refresh').addEventListener('click', function(e){
   });
 });
 
+document.getElementById('generatePwd').addEventListener('click', function(e){
+  document.getElementById('secretContent').value = generateRandomString(30);
+});
+
+document.getElementById('editGeneratePwd').addEventListener('click', function(e){
+  document.getElementById('editSecretContent').value = generateRandomString(30);
+});
+
+document.getElementById('copy').addEventListener('click', function(e){
+  document.getElementById('showSecretContent').select();
+  document.execCommand('copy');
+  document.getElementById('search').select();
+});
+
+document.getElementById('changePasswordA').addEventListener('click', function(e){
+  setTimeout(function(){ document.getElementById('changePasswordInput').focus(); }, 100);
+});
+
+document.getElementById('addSecretPopupA').addEventListener('click', function(e){
+  setTimeout(function(){ document.getElementById('secretTitle').focus(); }, 100);
+});
+
 document.getElementById('search').addEventListener('keyup', function(e){
   var elems = document.querySelectorAll('.secretElem');
   for (var i = 0; i < elems.length; i++) {
@@ -254,6 +276,12 @@ document.getElementById('search').addEventListener('keyup', function(e){
 document.getElementById('password').addEventListener('keypress', function(e){
   if(e.keyCode === 13){
     document.getElementById('getKeys').click();
+  }
+});
+
+document.getElementById('newPassword').addEventListener('keypress', function(e){
+  if(e.keyCode === 13){
+    document.getElementById('newUser').click();
   }
 });
 
@@ -469,5 +497,6 @@ function getSecretList(){
       secretsList.appendChild(uiSecret(hashedTitle, currentUser.titles[hashedTitle]));
     });
   });
+  document.getElementById('search').focus();
 }
 
