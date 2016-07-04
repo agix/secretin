@@ -47,3 +47,14 @@ function asciiToUint8Array(str){
 function bytesToASCIIString(bytes){
   return String.fromCharCode.apply(null, new Uint8Array(bytes));
 }
+
+function generateRandomString(length){
+  var charset = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789 !"#$%&\'()*+,-./:;<=>?@[\]^_`{}~';
+  var randomValues = new Uint8Array(length);
+  crypto.getRandomValues(randomValues);
+  var string = '';
+  for(var i = 0; i < length; i++){
+    string += charset[randomValues[i]%charset.length];
+  }
+  return string;
+}

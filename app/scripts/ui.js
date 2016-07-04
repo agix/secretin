@@ -112,3 +112,13 @@ function uiMultipleSecretFields(secret) {
 
   return list;
 }
+
+function copyButtonForField(fieldId) {
+
+  var link = document.createElement('a');
+  a.classList.add('icon');
+  a.title = "Copy";
+  a.textContent = '❐';
+
+  a.setAttribute('data-target',fieldId);
+}

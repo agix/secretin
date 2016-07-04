@@ -407,6 +407,17 @@ h2 {
     font-size: 1.1em;
 }
 
+.icon {
+    margin-left: 10px;
+    cursor: pointer;
+    position:absolute;
+    top:50%;
+}
+
+.icon:hover {
+    font-size: 1.1em;
+}
+
 #db{
     width: 90%;
     height: 300px;

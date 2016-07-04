@@ -68,8 +68,8 @@
         </span>
         <span id="secrets" style="display:none">
           <h2 id="userTitle">Not connected</h2>
-          <a class="btn2" href="#addSecretPopup">Add secret</a>
-          <a class="btn2" href="#changePassword">Change password</a>
+          <a id="addSecretPopupA" class="btn2" href="#addSecretPopup">Add secret</a>
+          <a id="changePasswordA" class="btn2" href="#changePassword">Change password</a>
           <input type="button" class="btn2" id="deco" value="Disconnect"/>
           <span class="separator"></span>
           <h3>Secrets list <a id="refresh">↺</a></h3>
@@ -95,20 +95,7 @@
         <a class="close" href="#keys">×</a>
         <div class="content">
           <input type="text" id="secretTitle" placeholder="Secret title"/><br />
-          <form id="secretFields">
-            <div class="form-inline">
-              <label for="fieldValue">Label :</label>
-              <input type="text" id="secretContent" placeholder="totolol">
-            </div>
-            <div class="form-inline">
-              <label for="fieldValue2">Label :</label>
-              <input type="text" id="secretContent2" placeholder="totolol">
-            </div>
-            <div class="form-inline">
-              <label for="fieldValue3">Label :</label>
-              <input type="text" id="secretContent3" placeholder="totolol">
-            </div>
-          </form>
+          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><a class="icon" id="generatePwd" title="Generate Password">⎁</a><br />
           <input type="button" class="btn3" id="addSecret" value="Add secret" />
         </div>
       </div>
@@ -129,7 +116,7 @@
         <a class="close" id="closeEditSecret">×</a>
         <div class="content">
           <input type="hidden" id="editSecretHash" />
-          <textarea class="secretContent" id="editSecretContent"></textarea><br />
+          <textarea class="secretContent" id="editSecretContent"></textarea><a class="icon" id="editGeneratePwd" title="Generate Password">⎁</a><br />
           <input type="button" class="btn3" id="saveSecret" value="Save" />
         </div>
       </div>
