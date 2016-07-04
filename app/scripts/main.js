@@ -73,10 +73,8 @@ document.getElementById('addSecret').addEventListener('click', function(e){
 
   var json = newSecret.populateContent();
 
-  console.log('created json : ' + json);
-
   addSecret(title, json).then(function(){
-    uiEmptyAddSecretFields();
+    uiResetAddSecretFields();
     document.getElementById('secretTitle').value = '';
     document.location.href = '#keys';
     getSecretList(currentUser);
@@ -85,6 +83,19 @@ document.getElementById('addSecret').addEventListener('click', function(e){
     throw(err);
   });
 
+});
+
+document.getElementById('addSecretField').addEventListener('click', function(e){
+
+  var fieldsList = document.getElementById('addSecretFields');
+  var fields = fieldsList.getElementsByTagName("li");
+
+  var newLi = fields[0].cloneNode(true);
+
+  newLi.querySelector('.editableFieldLabel').value = '';
+  newLi.querySelector('.editableFieldContent').value = '';
+
+  fieldsList.appendChild(newLi);
 });
 
 document.getElementById('changePasswordBtn').addEventListener('click', function(e) {

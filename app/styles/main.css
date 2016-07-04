@@ -422,6 +422,17 @@ h2 {
     font-size: 1.1em;
 }
 
+.bottomIcon {
+    font-size: 2em;
+    margin: auto;
+    position:relative;
+    top:0px;
+}
+
+.bottomIcon:hover {
+    font-size: 2.1em;
+}
+
 #db{
     width: 90%;
     height: 300px;

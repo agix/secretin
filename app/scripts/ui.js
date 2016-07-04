@@ -103,8 +103,8 @@ function uiMultipleSecretFields(secret) {
 
     var input = document.createElement('input');
     input.type = 'text';
+    input.readOnly = true;
     input.value = field['content'];
-    input.readonly = true;
     row.appendChild(input);
 
     list.appendChild(row);
@@ -113,17 +113,28 @@ function uiMultipleSecretFields(secret) {
   return list;
 }
 
-function uiEmptyAddSecretFields() {
+function uiResetAddSecretFields() {
 
   var fieldsList = document.getElementById('addSecretFields');
   var fields = fieldsList.getElementsByTagName("li");
 
-  for (var i = 0; i < fields.length; ++i) {
+  var elementsToRemove = [];
+
+  for (var i = 0; i < fields.length; i++) {
 
     var li = fields[i];
 
-    li.querySelector('.editableFieldLabel').value = '';
-    li.querySelector('.editableFieldContent').value = '';
+    if( i >= 1 ) {
+      elementsToRemove.push(li);
+    }
+    else {
+      li.querySelector('.editableFieldLabel').value = '';
+      li.querySelector('.editableFieldContent').value = '';
+    }
+  }
+
+  for(var i in elementsToRemove) {
+    fieldsList.removeChild(elementsToRemove[i]);
   }
 
 }
