@@ -49,6 +49,7 @@ gulp.task('buildServ', function() {
   gulp.src(
     [
       'app/scripts/main.js',
+      'app/scripts/ui.js',
       'app/scripts/User.js',
       'app/scripts/APIServer.js',
       'app/scripts/lib/**',

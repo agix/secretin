@@ -95,7 +95,17 @@
         <a class="close" href="#keys">×</a>
         <div class="content">
           <input type="text" id="secretTitle" placeholder="Secret title"/><br />
-          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><a class="icon" id="generatePwd" title="Generate Password">⎁</a><br />
+            <ul id="addSecretFields">
+              <li>
+                <input type="text" placeholder="label" class="editableFieldLabel">
+                <input type="text" placeholder="secret" class="editableFieldContent">
+              </li>
+              <li>
+                <input type="text" placeholder="label" class="editableFieldLabel">
+                <input type="text" placeholder="secret" class="editableFieldContent">
+              </li>
+            </ul>
+          <br />
           <input type="button" class="btn3" id="addSecret" value="Add secret" />
         </div>
       </div>

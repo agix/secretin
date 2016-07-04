@@ -113,6 +113,21 @@ function uiMultipleSecretFields(secret) {
   return list;
 }
 
+function uiEmptyAddSecretFields() {
+
+  var fieldsList = document.getElementById('addSecretFields');
+  var fields = fieldsList.getElementsByTagName("li");
+
+  for (var i = 0; i < fields.length; ++i) {
+
+    var li = fields[i];
+
+    li.querySelector('.editableFieldLabel').value = '';
+    li.querySelector('.editableFieldContent').value = '';
+  }
+
+}
+
 function copyButtonForField(fieldId) {
 
   var link = document.createElement('a');

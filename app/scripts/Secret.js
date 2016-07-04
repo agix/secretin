@@ -5,9 +5,11 @@ var Secret = function(title, rawContent) {
 
   _this.title     = title;
   _this.content   = rawContent;
-  _this.fields    = [];
+  _this.fields    = new Array();
 
-  _this.populateFields();
+  if( typeof(rawContent) !== 'undefined') {
+    _this.populateFields();
+  }
   
 };
 
@@ -27,4 +29,15 @@ Secret.prototype.populateFields = function() {
     _this.fields  = null;
   }
 
+};
+
+Secret.prototype.populateContent = function() {
+
+  var _this = this;
+
+  var json = { 'fields' : _this.fields };
+
+  _this.rawContent = JSON.stringify(json);
+
+  return _this.rawContent;
 };

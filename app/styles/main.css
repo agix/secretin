@@ -4,6 +4,10 @@ body{
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+ul{
+    list-style-type: none;
+}
+
 #menu {
     width: 100%;
     list-style-type:none;
