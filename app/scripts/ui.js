@@ -33,12 +33,12 @@ function uiSecret(hashedTitle, title){
   var editBtn = document.createElement('input');
   editBtn.type = 'button';
   editBtn.value = 'Edit';
-  editBtn.addEventListener('click', editSecret);
+  editBtn.addEventListener('click', uiEditSecret);
 
   var deleteBtn = document.createElement('input');
   deleteBtn.type = 'button';
   deleteBtn.value = 'Delete';
-  deleteBtn.addEventListener('click', deleteSecret);
+  deleteBtn.addEventListener('click', uiDeleteSecret);
 
   var titleSpan = document.createElement('span');
   titleSpan.textContent = title.substring(14);
