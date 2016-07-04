@@ -194,12 +194,12 @@ document.getElementById('editGeneratePwd').addEventListener('click', function(e)
   document.getElementById('editSecretContent').value = generateRandomString(30);
 });
 
-document.getElementById('copy').addEventListener('click', function(e) {
-  e.target.getAttribute('target-id');
-  document.getElementById('showSecretText').select();
-  document.execCommand('copy');
-  document.getElementById('search').select();
-});
+// document.getElementById('copy').addEventListener('click', function(e) {
+//   e.target.getAttribute('target-id');
+//   document.getElementById('showSecretText').select();
+//   document.execCommand('copy');
+//   document.getElementById('search').select();
+// });
 
 document.getElementById('changePasswordA').addEventListener('click', function(e){
   setTimeout(function(){ document.getElementById('changePasswordInput').focus(); }, 100);
