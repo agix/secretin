@@ -312,6 +312,7 @@ h2 {
 }
 
 #secretTitle, #secretContent, #showSecretContent, #editSecretContent {
+    margin-bottom: 20px;
     border: solid 5px #4F628E;
 }
 
@@ -356,6 +357,15 @@ h2 {
 
 .secretElem:last-child{
     border-bottom-style: solid;
+}
+
+#addSecretFields {
+  margin: auto;
+}
+
+#addSecretFields li {
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 #sharedUsers{
@@ -420,6 +430,21 @@ h2 {
 
 .icon:hover {
     font-size: 1.1em;
+}
+
+.iconDelete {
+    display: inline-block;
+    vertical-align:center;
+    float : right;
+    height: 23px;
+    line-height: 23px;
+    padding:10px;
+    cursor: pointer;
+    font-size: 2em;
+}
+
+.iconDelete:hover {
+    font-size: 2.1em;
 }
 
 .bottomIcon {

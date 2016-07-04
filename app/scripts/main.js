@@ -95,7 +95,15 @@ document.getElementById('addSecretField').addEventListener('click', function(e){
   newLi.querySelector('.editableFieldLabel').value = '';
   newLi.querySelector('.editableFieldContent').value = '';
 
+  newLi.querySelector('.iconDelete').addEventListener('click', function(e){
+    uiDeleteField(e.target.parentNode);
+  });
+
   fieldsList.appendChild(newLi);
+});
+
+document.getElementById('addSecretFields').querySelector('.iconDelete').addEventListener('click', function(e){
+  uiDeleteField(e.target.parentNode);
 });
 
 document.getElementById('changePasswordBtn').addEventListener('click', function(e) {

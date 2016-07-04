@@ -148,3 +148,13 @@ function copyButtonForField(fieldId) {
 
   a.setAttribute('data-target',fieldId);
 }
+
+function uiDeleteField(field) {
+
+  var fieldsList = field.parentNode;
+  var fields = fieldsList.getElementsByTagName("li");
+
+  if( fields.length > 1 ) {
+    fieldsList.removeChild(field);
+  }
+}
