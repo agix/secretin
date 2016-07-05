@@ -57,8 +57,8 @@ app.get('/user/:name/:hash', function (req, res) {
           iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
         };
         user.keys = {};
+        user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
       }
-      user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
       res.json(user);
     }
     else{

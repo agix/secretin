@@ -126,7 +126,7 @@ When you create a new account, username is SHA256'ed and a RSA-OAEP key pair is 
 
 Then your private key is wrapped with AES-CBC-256 and a derivedKey from your master password.
 
-The derivedKey use PBKDF2 with SHA-256, 256 bits random salt and 10 000 iterations.
+The derivedKey use PBKDF2 with SHA-256, 256 bits random salt and 100 000 + (random%255) iterations.
 
 When you create a secret, you give a title and a secret content.
 
@@ -198,8 +198,8 @@ API object takes server url for server saved version and `{users: {}, secrets: {
   * it returns jwk publicKey object.
 * *getWrappedPrivateKey* takes username string or username hexString, derived key hash hexString and boolean to say if it's hashed in arguments.
   * it returns `{privateKey: hexString, iv: hexString}` object
-* *getSalt* takes username string or username hexString, derived key hash hexString and boolean to say if it's hashed in arguments.
-  * it returns salt hexString.
+* *getDerivationParameters* takes username string or username hexString and boolean to say if it's hashed in arguments.
+  * it returns `{salt: hexString, iterations: int}`.
 * *getKeys* takes username string or username hexString, derived key hash hexString  and boolean to say if it's hashed in arguments.
   * it returns list of `{hashedTitle: {title: hexString, key: hexString, right: int}}`
 * *getUser* takes username string or username hexString, derived key hash hexString  and boolean to say if it's hashed in arguments. It's like getPublicKey, getWrappedPrivateKey, getKeys and getSalt combined.

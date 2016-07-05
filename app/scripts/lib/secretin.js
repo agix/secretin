@@ -12,6 +12,7 @@ function newUser(username, password){
       }).then(function(dKey){
         pass.salt = bytesToHexString(dKey.salt);
         pass.hash = bytesToHexString(dKey.hash);
+        pass.iterations = dKey.iterations;
         currentUser.hash = pass.hash;
         return currentUser.exportPrivateKey(dKey.key);
       }).then(function(privateKey){
@@ -31,8 +32,8 @@ function newUser(username, password){
 }
 
 function getKeys(username, password){
-  return api.getSalt(username).then(function(salt){
-    return derivePassword(password, salt);
+  return api.getDerivationParameters(username).then(function(parameters){
+    return derivePassword(password, parameters);
   }).then(function(dKey){
     key = dKey.key;
     hash = bytesToHexString(dKey.hash);
@@ -81,6 +82,7 @@ function changePassword(password){
   return derivePassword(password).then(function(dKey){
     pass.salt = bytesToHexString(dKey.salt);
     pass.hash = bytesToHexString(dKey.hash);
+    pass.iterations = dKey.iterations;
     return currentUser.exportPrivateKey(dKey.key);
   }).then(function(privateKey){
     return api.changePassword(currentUser, privateKey, pass);

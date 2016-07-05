@@ -263,13 +263,16 @@ API.prototype.retrieveUser = function(username, hash, isHashed){
     else{
       var fakePrivateKey = new Uint8Array(3232);
       var fakeIV = new Uint8Array(16);
+      var fakeHash = new Uint8Array(32);
       crypto.getRandomValues(fakePrivateKey);
       crypto.getRandomValues(fakeIV);
+      crypto.getRandomValues(fakeHash);
       user.privateKey = {
         privateKey: bytesToHexString(fakePrivateKey),
         iv: bytesToHexString(fakeIV),
       };
       user.keys = {};
+      user.pass.hash = fakeHash;
       return user;
     }
   }, function(err){
@@ -277,10 +280,10 @@ API.prototype.retrieveUser = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getSalt = function(username, isHashed){
+API.prototype.getDerivationParameters = function(username, isHashed){
   var _this = this;
   return _this.retrieveUser(username, 'undefined', isHashed).then(function(user){
-    return user.pass.salt;
+    return {salt: user.pass.salt, iterations: user.pass.iterations};
   });
 };
 

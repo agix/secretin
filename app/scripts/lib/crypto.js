@@ -151,7 +151,7 @@ function importPublicKey(jwkPublicKey){
   return crypto.subtle.importKey(format, jwkPublicKey, algorithm, extractable, keyUsages);
 }
 
-function derivePassword(password, salt){
+function derivePassword(password, parameters){
   var result = {};
 
   var passwordBuf = asciiToUint8Array(password);
@@ -163,20 +163,31 @@ function derivePassword(password, salt){
   ).then(function(key){
 
     var saltBuf;
-    if(typeof salt === 'undefined'){
+    var iterations;
+    if(typeof parameters === 'undefined'){
       saltBuf = new Uint8Array(32);
       crypto.getRandomValues(saltBuf);
+      var iterationsBuf = new Uint8Array(1);
+      crypto.getRandomValues(iterationsBuf);
+      iterations = 100000 + iterationsBuf[0];
     }
     else{
-      saltBuf = hexStringToUint8Array(salt);
+      saltBuf = hexStringToUint8Array(parameters.salt);
+      if(typeof parameters.iterations === 'undefined'){
+        iterations = 10000; //retrocompatibility
+      }
+      else{
+        iterations = parameters.iterations;
+      }
     }
 
     result.salt = saltBuf;
+    result.iterations = iterations;
 
     var algorithm = {
       name: "PBKDF2",
       salt: saltBuf,
-      iterations: 10000,
+      iterations: iterations,
       hash: {name: "SHA-256"}
     };
 
