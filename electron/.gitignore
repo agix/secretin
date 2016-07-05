@@ -1,0 +1,5 @@
+node_modules
+db.json
+scripts
+styles
+secret-in*

@@ -47,7 +47,7 @@ API.prototype.addSecret = function(user, secretObject){
 
 API.prototype.deleteSecret = function(user, hashedTitle){
   var _this = this;
-  var hashdeUsername;
+  var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
@@ -68,7 +68,7 @@ API.prototype.getNewChallenge = function(user){
 
 API.prototype.editSecret = function(user, secretObject, hashedTitle){
   var _this = this;
-  var hashdeUsername;
+  var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);

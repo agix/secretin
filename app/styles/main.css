@@ -418,6 +418,15 @@ h2 {
     font-size: 1.1em;
 }
 
+.iconList {
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.iconList:hover {
+    font-size: 1.1em;
+}
+
 #db{
     width: 90%;
     height: 300px;

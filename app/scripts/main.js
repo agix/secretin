@@ -72,7 +72,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', function(
   var pass = {};
   btn.disabled = true;
   btn.value = 'Please wait...';
-  changePassword.then(function(msg){
+  changePassword(password).then(function(msg){
     btn.disabled = false;
     btn.value = 'Change password';
     document.getElementById('changePasswordInput').value = '';
@@ -212,6 +212,18 @@ document.getElementById('search').addEventListener('keyup', function(e){
     else{
       elems[i].style.display = '';
     }
+  }
+});
+
+document.getElementById('getDb').addEventListener('click', function(e) {
+  if(typeof currentUser !== 'undefined' && typeof currentUser.username !== 'undefined'){
+    api.getDb(currentUser.username, currentUser.hash).then(function(db){
+      document.getElementById('db').value = JSON.stringify(db);
+    });
+  }
+  else{
+    document.getElementById('db').value = 'Not connected !';
+    setTimeout(function(){ document.getElementById('db').value = ''; }, 1000);
   }
 });
 

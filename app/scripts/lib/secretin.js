@@ -7,7 +7,7 @@ function newUser(username, password){
       var result = {};
       var pass = {};
       currentUser = new User(username);
-      currentUser.generateMasterKey().then(function(){
+      return currentUser.generateMasterKey().then(function(){
         return derivePassword(password);
       }).then(function(dKey){
         pass.salt = bytesToHexString(dKey.salt);
@@ -77,6 +77,7 @@ function addSecret(title, content){
 }
 
 function changePassword(password){
+  var pass = {};
   return derivePassword(password).then(function(dKey){
     pass.salt = bytesToHexString(dKey.salt);
     pass.hash = bytesToHexString(dKey.hash);

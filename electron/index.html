@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>SecretIn</title>
+    <meta name="description" content="https://github.com/agix/secretin">
+    <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles/main.css">
+  </head>
+  <body>
+  <div id="content">
+
+  <div class="widget">
+    <ol class="widget-list" id="createUser">
+      <div>
+        <input type="text" id="newUsername" placeholder="Username"/>
+        <input type="password" id="newPassword" placeholder="Master Password"/>
+        <input type="button" class="btn" id="newUser" value="Generate" />
+        <div id="errorNew" style="display:none" class="error"></div>
+      </div>
+    </ol>
+
+    <ol class="widget-list" id="changePassword">
+      <div>
+        <span>
+          <input type="password" id="changePasswordInput" placeholder="Master Password"/>
+          <input type="button" class="btn" id="changePasswordBtn" value="Change password" />
+          <a href="#keys" class="btn">Cancel</a>
+        </span>
+      </div>
+    </ol>
+
+    <ol class="widget-list" id="keys">
+      <div>
+        <span id="login">
+          <input type="text" id="username" placeholder="Username"/>
+          <input type="password" id="password" placeholder="Master Password"/>
+          <input type="button" class="btn" id="getKeys" value="Get keys" />
+          <div id="errorLogin" style="display:none" class="error"></div>
+        </span>
+        <span id="secrets" style="display:none">
+          <h2 id="userTitle">Not connected</h2>
+          <a id="changePasswordA" class="btn2" href="#changePassword">Change password</a>
+          <input type="button" class="btn2" id="deco" value="Disconnect"/>
+          <span class="separator"></span>
+          <ul id="secretsList"></ul>
+        </span>
+      </div>
+    </ol>
+
+    <ul class="widget-tabs">
+      <li class="widget-tab">
+        <a href="#createUser" class="widget-tab-link">Create User</a>
+      </li>
+      <li class="widget-tab">
+        <a href="#keys" class="widget-tab-link">Get keys</a>
+      </li>
+    </ul>
+  </div>
+
+  </div>
+    <script src="scripts/main.js"></script>
+  </body>
+</html>

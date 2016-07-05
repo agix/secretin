@@ -7,6 +7,8 @@ var jshint  = require('gulp-jshint');
 var concat  = require('gulp-concat');
 var tar     = require('gulp-tar');
 var gzip    = require('gulp-gzip');
+var zip     = require('gulp-zip');
+var exec    = require('child_process').exec;
 
 gulp.task('buildLocal', function() {
   gulp.src('app/index.html')
@@ -29,8 +31,8 @@ gulp.task('buildLocal', function() {
   gulp.src('app/styles/**')
     .pipe(gulp.dest('dist/styles'));
 
-  gulp.src('app/scripts/attack.js')
-    .pipe(gulp.dest('dist/scripts'));
+  // gulp.src('app/scripts/attack.js')
+  //   .pipe(gulp.dest('dist/scripts'));
 
   gulp.src('dist/**')
     .pipe(gulp.dest('server/client/alone'));
@@ -38,6 +40,24 @@ gulp.task('buildLocal', function() {
 
 });
 
+gulp.task('buildElectron', function() {
+
+  gulp.src(
+    [
+      'app/scripts/mainElectron.js',
+      'app/scripts/User.js',
+      'app/scripts/APIAlone.js',
+      'app/scripts/lib/**',
+      'app/scripts/typeElectron.js'
+    ]
+  )
+    .pipe(concat('main.js'))
+    .pipe(gulp.dest('electron/scripts'));
+
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('electron/styles'));
+
+});
 
 gulp.task('buildServ', function() {
   gulp.src('app/index.html')
@@ -66,7 +86,7 @@ gulp.task('watch', function() {
   gulp.watch(['app/*.html'], ['build']);
 });
 
-gulp.task('build', ['buildLocal', 'buildServ']);
+gulp.task('build', ['buildLocal', 'buildServ', 'buildElectron']);
 
 gulp.task('default', ['build', 'watch']);
 
@@ -102,4 +122,15 @@ gulp.task('deploy', function() {
     .pipe(tar('secretin.tar'))
     .pipe(gzip())
     .pipe(gulp.dest('./'));
+});
+
+gulp.task('electron', function() {
+  exec('cd electron/ && rm db.json ; rm secret-in.me-win32-x64.zip ; electron-packager ./ --platform=win32 --arch=x64 --version=1.2.5 --overwrite', function(err, stdout, stderr){
+    console.log(stdout);
+    console.log(stderr);
+    console.log('Zipping...');
+    gulp.src('electron/secret-in.me-win32-x64/**', {base: './electron/'})
+      .pipe(zip('secret-in.me-win32-x64.zip'))
+      .pipe(gulp.dest('electron/'));
+  });
 });

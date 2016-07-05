@@ -10,7 +10,6 @@ var API = function(link) {
   else{
     this.db = {"users":{}, "secrets": {}};
   }
-  this.textarea = document.getElementById('db');
 };
 
 API.prototype.userExists = function(username, isHashed){
@@ -31,7 +30,6 @@ API.prototype.addUser = function(username, privateKey, publicKey, pass){
       return SHA256(pass.hash+OPTIONAL_SALT).then(function(hashedHash){
         pass.hash = bytesToHexString(hashedHash);
         _this.db.users[bytesToHexString(hashedUsername)] = {pass: pass, privateKey: privateKey, publicKey: publicKey, keys: {}};
-        _this.textarea.value = JSON.stringify(_this.db);
       });
     }
     else{
@@ -58,7 +56,6 @@ API.prototype.addSecret = function(user, secretObject){
           key: secretObject.wrappedKey,
           rights: 2
         }
-        _this.textarea.value = JSON.stringify(_this.db);
       }
       else{
         throw('Secret already exists');
@@ -72,7 +69,7 @@ API.prototype.addSecret = function(user, secretObject){
 
 API.prototype.deleteSecret = function(user, hashedTitle){
   var _this = this;
-  var hashdeUsername;
+  var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
@@ -87,7 +84,6 @@ API.prototype.deleteSecret = function(user, hashedTitle){
         if(_this.db.secrets[hashedTitle].users.length === 0){
           delete _this.db.secrets[hashedTitle];
         }
-        _this.textarea.value = JSON.stringify(_this.db);
       }
       else{
         throw('Secret not found');
@@ -113,7 +109,7 @@ API.prototype.getNewChallenge = function(user){
 
 API.prototype.editSecret = function(user, secretObject, hashedTitle){
   var _this = this;
-  var hashdeUsername;
+  var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
@@ -122,7 +118,6 @@ API.prototype.editSecret = function(user, secretObject, hashedTitle){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
         _this.db.secrets[hashedTitle].iv = secretObject.iv;
         _this.db.secrets[hashedTitle].secret = secretObject.secret;
-        _this.textarea.value = JSON.stringify(_this.db);
       }
       else{
         throw('Secret not found');
@@ -147,7 +142,6 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
           if(typeof _this.db.users[wrappedKey.user] !== 'undefined'){
             if(typeof _this.db.users[wrappedKey.user].keys[hashedTitle] !== 'undefined'){
               _this.db.users[wrappedKey.user].keys[hashedTitle].key = wrappedKey.key;
-              _this.textarea.value = JSON.stringify(_this.db);
             }
           }
         });
@@ -184,7 +178,6 @@ API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFrie
               delete _this.db.users[hashedFriendUsername].keys[hashedTitle];
               var id = _this.db.secrets[hashedTitle].users.indexOf(hashedFriendUsername);
               _this.db.secrets[hashedTitle].users.splice(id, 1);
-              _this.textarea.value = JSON.stringify(_this.db);
             }
             else{
               throw('You didn\'t share this secret with this friend');
@@ -226,7 +219,6 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
           if(_this.db.secrets[hashedTitle].users.indexOf(sharedSecretObject.friendName) < 0){
             _this.db.secrets[hashedTitle].users.push(sharedSecretObject.friendName);
           }
-          _this.textarea.value = JSON.stringify(_this.db);
         }
         else{
           throw('Friend not found');
@@ -332,6 +324,13 @@ API.prototype.getSecret = function(hash){
   });
 };
 
+API.prototype.getDb = function(username, hash, isHashed){
+  var _this = this;
+  return new Promise(function(resolve, reject){
+    resolve(_this.db);
+  });
+};
+
 API.prototype.changePassword = function(user, privateKey, pass){
   var _this = this;
   var hashedUsername;
@@ -345,7 +344,6 @@ API.prototype.changePassword = function(user, privateKey, pass){
         pass.hash = bytesToHexString(hashedHash);
         _this.db.users[hashedUsername].privateKey = privateKey;
         _this.db.users[hashedUsername].pass = pass;
-        _this.textarea.value = JSON.stringify(_this.db);
       });
     }
     else{

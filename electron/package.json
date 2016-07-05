@@ -1,0 +1,8 @@
+{
+  "name": "secret-in.me",
+  "version": "0.1.0",
+  "main": "electron.js",
+  "dependencies": {
+    "robotjs": "^0.4.4"
+  }
+}
