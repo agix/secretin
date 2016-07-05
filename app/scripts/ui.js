@@ -98,13 +98,15 @@ function uiMultipleSecretFields(secret) {
     var row = document.createElement('li');
 
     var label = document.createElement('label');
-    label.textContent = field['label'];
+    label.textContent = field['label'] + ' :';
+    label.classList.add('showSecretFieldLabel');
     row.appendChild(label);
 
     var input = document.createElement('input');
     input.type = 'text';
     input.readOnly = true;
     input.value = field['content'];
+    input.classList.add('showSecretFieldContent');
     row.appendChild(input);
 
     list.appendChild(row);

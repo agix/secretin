@@ -6,6 +6,7 @@ body{
 
 ul{
     list-style-type: none;
+    -webkit-padding-start: 0px;
 }
 
 #menu {
@@ -357,6 +358,25 @@ h2 {
 
 .secretElem:last-child{
     border-bottom-style: solid;
+}
+
+.showSecretFieldLabel {
+  display:block;
+  float:left;
+  width:30%;
+  height:43px;
+  line-height: 43px;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.showSecretFieldContent {
+  display:block;
+  width:50%;
+}
+
+#showSecretFields li {
+  margin-bottom: 10px;
 }
 
 #addSecretFields {
