@@ -85,8 +85,8 @@ function specialInput(parent, secret, inputPosition){
     document.execCommand('copy');
 
     setTimeout(function(){
-      var robot = require("robotjs");
-      robot.typeString("Hello World");
+      var robot = require('robotjs');
+      robot.typeString(input.value);
     }, 3000);
     input.type = 'password';
   });
