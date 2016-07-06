@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
+const {ipcRenderer} = require('electron');
 
 var dbPath = 'db.json';
 
@@ -80,15 +81,11 @@ function specialInput(parent, secret, inputPosition){
   copyA.title = 'Copy';
   copyA.addEventListener('click', function(e){
     var input = e.target.parentNode.childNodes[inputPosition];
-    input.type = 'text';
-    input.select();
-    document.execCommand('copy');
-
-    setTimeout(function(){
-      var robot = require('robotjs');
-      robot.typeString(input.value);
-    }, 3000);
-    input.type = 'password';
+    // input.type = 'text';
+    // input.select();
+    // document.execCommand('copy');
+    ipcRenderer.sendSync('changeClipboard', input.value);
+    // input.type = 'password';
   });
 
   parent.appendChild(labelA);

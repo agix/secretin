@@ -9,6 +9,9 @@
 
 #define SVCNAME L"Secret-in.me"
 
+DWORD Sessions = 0;
+HANDLE ghSvcStopEvent = NULL;
+
 void SvcReportEvent(LPTSTR szFunction) {
 	/*
 	HKEY hkResult;
@@ -47,10 +50,12 @@ void SvcReportEvent(LPTSTR szFunction) {
 }
 
 bool runSecretin() {
-	HANDLE hToken;
+	HANDLE hToken = NULL;
 	HANDLE hDupToken;
 	HANDLE hProcessSnap;
 	HANDLE hProcess;
+	DWORD sessionId = 0;
+	DWORD length;
 	PROCESSENTRY32 pe;
 	bool found = FALSE;
 
@@ -66,6 +71,30 @@ bool runSecretin() {
 	}
 	do {
 		if (wcsncmp(pe.szExeFile, L"winlogon.exe", 12) == NULL) {
+			hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pe.th32ProcessID);
+			if (hProcess == 0) {
+				SvcReportEvent(L"OpenProcess");
+				continue;
+			}
+
+			if (!OpenProcessToken(hProcess, TOKEN_ALL_ACCESS, &hToken)) {
+				SvcReportEvent(L"OpenProcessToken");
+				CloseHandle(hProcess);
+				continue;
+			}
+			GetTokenInformation(hToken, TokenSessionId, &sessionId, sizeof(sessionId), &length);
+			if (sessionId == 0) {
+				CloseHandle(hProcess);
+				SvcReportEvent(L"Bad sessionId");
+				continue;
+			}
+			CloseHandle(hProcess);
+
+			if ((Sessions&(2 << (sessionId - 1))) != 0) {
+				SvcReportEvent(L"Already exists");
+				continue;
+			}
+
 			found = TRUE;
 			break;
 		}
@@ -76,13 +105,8 @@ bool runSecretin() {
 		return FALSE;
 	}
 
-	hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pe.th32ProcessID);
-	if (hProcess == 0) {
-		SvcReportEvent(L"OpenProcess");
-		return FALSE;
-	}
-	if (!OpenProcessToken(hProcess, TOKEN_ALL_ACCESS, &hToken)) {
-		SvcReportEvent(L"OpenProcessToken");
+	if (hToken == NULL) {
+		SvcReportEvent(L"hToken");
 		return FALSE;
 	}
 
@@ -101,25 +125,58 @@ bool runSecretin() {
 		SvcReportEvent(L"CreateProcessAsUser");
 		return FALSE;
 	}
-
+	SvcReportEvent(L"New process");
+	Sessions |= (2 << (sessionId-1));
 	return TRUE;
 }
 
-void WINAPI SvcCtrlHandler(DWORD dwCtrl) {
-	return;
+DWORD WINAPI SvcCtrlHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext) {
+	WTSSESSION_NOTIFICATION *sessionNotification;
+	switch (dwControl) {
+		case SERVICE_CONTROL_STOP:
+			SetEvent(ghSvcStopEvent);
+			break;
+		case SERVICE_CONTROL_SESSIONCHANGE:
+			SvcReportEvent(L"SESSIONCHANGE");
+			switch (dwEventType) {
+				case WTS_CONSOLE_CONNECT:
+					SvcReportEvent(L"CONNECT");
+					runSecretin();
+					break;
+				case WTS_CONSOLE_DISCONNECT:
+					SvcReportEvent(L"DISCONNECT");
+					sessionNotification = (WTSSESSION_NOTIFICATION*)lpEventData;
+					Sessions ^= sessionNotification->dwSessionId;
+					break;
+				default:
+					break;
+			}
+			break;
+		case SERVICE_CONTROL_INTERROGATE:
+			break;
+		default:
+			break;
+	}
+	return Sessions;
 }
 
 void WINAPI SvcMain(DWORD dwArgc, LPTSTR* lpszArgv) {
 	SERVICE_STATUS gSvcStatus;
-	SERVICE_STATUS_HANDLE gSvcStatusHandle = RegisterServiceCtrlHandler(SVCNAME, SvcCtrlHandler);
+	SERVICE_STATUS_HANDLE gSvcStatusHandle = RegisterServiceCtrlHandlerEx(SVCNAME, SvcCtrlHandler, NULL);
 	if (!gSvcStatusHandle) {
 		SvcReportEvent(L"RegisterServiceCtrlHandler");
 		return;
 	}
 
+	ghSvcStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (ghSvcStopEvent == NULL) {
+		SvcReportEvent(L"CreateEvent");
+		return;
+	}
+
 	gSvcStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS|SERVICE_INTERACTIVE_PROCESS;
 	gSvcStatus.dwCurrentState = SERVICE_RUNNING;
-	gSvcStatus.dwControlsAccepted = SERVICE_CONTROL_INTERROGATE;
+	gSvcStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SESSIONCHANGE;
 	gSvcStatus.dwWin32ExitCode = NO_ERROR;
 	gSvcStatus.dwServiceSpecificExitCode = NULL;
 	gSvcStatus.dwCheckPoint = NULL;
@@ -128,9 +185,13 @@ void WINAPI SvcMain(DWORD dwArgc, LPTSTR* lpszArgv) {
 	SetServiceStatus(gSvcStatusHandle, &gSvcStatus);
 
 	runSecretin();
-	gSvcStatus.dwCurrentState = SERVICE_STOPPED;
-	
-	SetServiceStatus(gSvcStatusHandle, &gSvcStatus);
+
+	while (1) {
+		WaitForSingleObject(ghSvcStopEvent, INFINITE);
+		gSvcStatus.dwCurrentState = SERVICE_STOPPED;
+		SetServiceStatus(gSvcStatusHandle, &gSvcStatus);
+		return;
+	}
 }
 
 int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, char *szCmdLine, int iCmdShow)

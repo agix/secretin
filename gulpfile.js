@@ -125,7 +125,7 @@ gulp.task('deploy', function() {
 });
 
 gulp.task('electron', function() {
-  exec('cd electron/ && rm db.json ; rm secret-in.me-win32-x64.zip ; electron-packager ./ --platform=win32 --arch=x64 --version=1.2.5 --overwrite', function(err, stdout, stderr){
+  exec('cd electron/ && rm db.json ; rm secret-in.me-win32-x64.zip ; cp node_modules/robotjs/build/Release/robotjsWin64.node node_modules/robotjs/build/Release/robotjs.node && electron-packager ./ --platform=win32 --arch=x64 --version=1.2.5 --overwrite', function(err, stdout, stderr){
     console.log(stdout);
     console.log(stderr);
     console.log('Zipping...');

@@ -1,15 +1,28 @@
 const electron = require('electron');
 // Module to control application life.
 const {app} = electron;
+// Module to catch shortcut
+const {globalShortcut} = electron;
 // Module to create native browser window.
 const {BrowserWindow} = electron;
 
+const {ipcMain} = electron;
+
+var robot = require('robotjs');
 // const menu = Menu.buildFromTemplate(template);
 // Menu.setApplicationMenu(menu);
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
+
+var fakeClipboard = '';
+
+ipcMain.on('changeClipboard', (event, arg) => {
+  fakeClipboard = arg;
+  event.returnValue = true;
+});
+
 
 function createWindow() {
   // Create the browser window.
@@ -22,12 +35,22 @@ function createWindow() {
   // Open the DevTools.
   // win.webContents.openDevTools();
 
+  win.setClosable(false);
+
   // Emitted when the window is closed.
-  win.on('closed', () => {
+  win.on('closed', (e) => {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
+  });
+
+  var shortcut = 'Ctrl+V'
+  globalShortcut.register(shortcut, () => {
+    setTimeout(function(){
+      robot.typeString(fakeClipboard);
+      fakeClipboard = '';
+    }, 500);
   });
 }
 
@@ -35,6 +58,7 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow);
+
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
