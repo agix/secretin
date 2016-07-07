@@ -95,7 +95,16 @@
         <a class="close" href="#keys">×</a>
         <div class="content">
           <input type="text" id="secretTitle" placeholder="Secret title"/><br />
-          <textarea class="secretContent" id="secretContent" placeholder="Secret Content"></textarea><a class="icon" id="generatePwd" title="Generate Password">⎁</a><br />
+            <ul id="addSecretFields">
+              <li>
+                <input type="text" placeholder="label" class="editableFieldLabel">
+                <input type="text" placeholder="secret" class="editableFieldContent">
+                <a class="iconDelete" title="Delete Field">-</a>
+              </li>
+            </ul>
+            <a class="icon bottomIcon" title="Add Field" id="addSecretField">+</a>
+            <br/>
+          <br />
           <input type="button" class="btn3" id="addSecret" value="Add secret" />
         </div>
       </div>
@@ -104,8 +113,7 @@
     <div id="showSecret" class="overlay">
       <div class="popup">
         <h2 id="showSecretTitle"></h2>
-        <div class="content">
-          <textarea class="secretContent" id="showSecretContent" readonly></textarea><a class="icon" id="copy" title="Copy">❐</a><br />
+        <div class="content" id="showSecretContent">
           <input type="button" class="btn3" id="hideSecret" value="Hide" />
         </div>
       </div>
