@@ -109,6 +109,10 @@ function uiMultipleSecretFields(secret) {
     input.classList.add('showSecretFieldContent');
     row.appendChild(input);
 
+    row.appendChild(copyButton());
+
+    row.appendChild(clearfix());
+
     list.appendChild(row);
   }
 
@@ -141,14 +145,28 @@ function uiResetAddSecretFields() {
 
 }
 
-function copyButtonForField(fieldId) {
+function copyButton() {
 
   var link = document.createElement('a');
-  a.classList.add('icon');
-  a.title = "Copy";
-  a.textContent = '❐';
+  link.classList.add('icon');
+  link.classList.add('copyButton');
+  link.title = "Copy";
+  link.textContent = '❐';
 
-  a.setAttribute('data-target',fieldId);
+  link.addEventListener('click', function(e) {
+    var field = e.target.parentNode.querySelector('.showSecretFieldContent');
+    field.select();
+    document.execCommand('copy');
+    document.getElementById('search').select();
+  });
+
+  return link;
+}
+
+function clearfix() {
+  var clearfix = document.createElement('div');
+  clearfix.classList.add('clearfix');
+  return clearfix;
 }
 
 function uiDeleteField(field) {

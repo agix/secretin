@@ -372,7 +372,8 @@ h2 {
 
 .showSecretFieldContent {
   display:block;
-  width:50%;
+  float:left;
+  width:45%;
 }
 
 #showSecretFields li {
@@ -452,6 +453,15 @@ h2 {
     font-size: 1.1em;
 }
 
+.copyButton {
+  display: block;
+  height: 43px;
+  line-height: 43px;
+  position: relative;
+  float: left;
+  margin-left: 30px;
+}
+
 .iconDelete {
     display: inline-block;
     vertical-align:center;
@@ -485,4 +495,13 @@ h2 {
 
 #search {
     width: 80%;
+}
+
+.clearfix:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
 }
