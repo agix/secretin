@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-const {ipcRenderer} = require('electron');
+var ipcRenderer = require('electron').ipcRenderer;
 
 var dbPath = 'db.json';
 

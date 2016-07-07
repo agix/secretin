@@ -53,17 +53,55 @@ document.getElementById('getKeys').addEventListener('click', function(e){
 });
 
 document.getElementById('addSecret').addEventListener('click', function(e){
-  var title   = document.getElementById('secretTitle').value;
-  var content = document.getElementById('secretContent').value;
-  addSecret(title, content).then(function(){
+
+  var title = document.getElementById('secretTitle').value;
+
+  var newSecret = new Secret();
+
+  var fieldsList = document.getElementById('addSecretFields');
+  var fields = fieldsList.getElementsByTagName("li");
+
+  for (var i = 0; i < fields.length; ++i) {
+
+    var li = fields[i];
+
+    var label = li.querySelector('.editableFieldLabel');
+    var content = li.querySelector('.editableFieldContent');
+
+    newSecret.fields.push({'label' : label.value, 'content' : content.value});
+  }
+
+  addSecret(title, newSecret.toString()).then(function(){
+    uiResetAddSecretFields();
     document.getElementById('secretTitle').value = '';
-    document.getElementById('secretContent').value = '';
     document.location.href = '#keys';
     getSecretList(currentUser);
   }, function(err){
     alert(err);
     throw(err);
   });
+
+});
+
+document.getElementById('addSecretField').addEventListener('click', function(e){
+
+  var fieldsList = document.getElementById('addSecretFields');
+  var fields = fieldsList.getElementsByTagName("li");
+
+  var newLi = fields[0].cloneNode(true);
+
+  newLi.querySelector('.editableFieldLabel').value = '';
+  newLi.querySelector('.editableFieldContent').value = '';
+
+  newLi.querySelector('.iconDelete').addEventListener('click', function(e){
+    uiDeleteField(e.target.parentNode);
+  });
+
+  fieldsList.appendChild(newLi);
+});
+
+document.getElementById('addSecretFields').querySelector('.iconDelete').addEventListener('click', function(e){
+  uiDeleteField(e.target.parentNode);
 });
 
 document.getElementById('changePasswordBtn').addEventListener('click', function(e) {
@@ -101,8 +139,13 @@ document.getElementById('deco').addEventListener('click', function(e){
 });
 
 document.getElementById('hideSecret').addEventListener('click', function(e){
-  document.getElementById('showSecretTitle').textContent = '';
-  document.getElementById('showSecretContent').value = '';
+  var content = document.getElementById('showSecretContent');
+  for (var c in content.childNodes) {
+    var child = content.childNodes[c];
+    if( child instanceof Element && child.id != 'hideSecret') {
+      content.removeChild(child);
+    }
+  }
   document.location.href = '#keys';
 });
 
@@ -181,25 +224,19 @@ document.getElementById('refresh').addEventListener('click', function(e){
   });
 });
 
-document.getElementById('generatePwd').addEventListener('click', function(e){
-  document.getElementById('secretContent').value = generateRandomString(30);
-});
+// document.getElementById('generatePwd').addEventListener('click', function(e){
+//   document.getElementById('secretContent').value = generateRandomString(30);
+// });
 
-document.getElementById('editGeneratePwd').addEventListener('click', function(e){
-  document.getElementById('editSecretContent').value = generateRandomString(30);
-});
-
-document.getElementById('copy').addEventListener('click', function(e){
-  document.getElementById('showSecretContent').select();
-  document.execCommand('copy');
-  document.getElementById('search').select();
-});
+// document.getElementById('editGeneratePwd').addEventListener('click', function(e){
+//   document.getElementById('editSecretContent').value = generateRandomString(30);
+// });
 
 document.getElementById('changePasswordA').addEventListener('click', function(e){
   setTimeout(function(){ document.getElementById('changePasswordInput').focus(); }, 100);
 });
 
-document.getElementById('addSecretPopupA').addEventListener('click', function(e){
+document.getElementById('addSecretPopupA').addEventListener('click', function(e) {
   setTimeout(function(){ document.getElementById('secretTitle').focus(); }, 100);
 });
 
@@ -265,12 +302,24 @@ function destroyUser(user){
 }
 
 function show(e){
+
   var hashedTitle  = e.path[1].children[0].textContent;
   var title  = e.path[1].children[1].textContent;
 
-  getSecret(hashedTitle).then(function(secret){
+  getSecret(hashedTitle).then(function(secretContent){
+    var secret = new Secret(secretContent);
+
+    var fieldsUI = uiSecretFields(secret);
+
+    var popup = document.getElementById('showSecret');
+    var content = popup.getElementsByClassName('content')[0];
+
+    var hideButton = document.getElementById('hideSecret');
+
+    content.insertBefore(fieldsUI, hideButton);
+
     document.getElementById('showSecretTitle').textContent = title;
-    document.getElementById('showSecretContent').value = secret;
+
     document.location.hash = '#showSecret';
   });
 }
@@ -321,72 +370,6 @@ function share(e, hashedTitle, title){
       sharedUsersList.appendChild(uiSharedUsers(userHash));
     });
   });
-}
-
-function uiSharedUsers(userHash){
-  var elem = document.createElement('li');
-  elem.classList.add('sharedUserElem');
-
-  var userHashSpan = document.createElement('span');
-  userHashSpan.textContent = userHash;
-
-  var unshareBtn = document.createElement('input');
-  unshareBtn.type = 'button';
-  unshareBtn.value = 'Unshare';
-  unshareBtn.addEventListener('click', unshare);
-
-  elem.appendChild(userHashSpan);
-  elem.appendChild(unshareBtn);
-  return elem;
-}
-
-function uiSecret(hashedTitle, title){
-  var elem = document.createElement('li');
-  elem.classList.add('secretElem');
-
-  var btn = document.createElement('input');
-  btn.type = 'button';
-  btn.value = 'Show';
-  btn.addEventListener('click', show);
-
-  var shareBtn = document.createElement('input');
-  shareBtn.type = 'button';
-  shareBtn.value = 'Share';
-  shareBtn.addEventListener('click', share);
-
-  var editBtn = document.createElement('input');
-  editBtn.type = 'button';
-  editBtn.value = 'Edit';
-  editBtn.addEventListener('click', uiEditSecret);
-
-  var deleteBtn = document.createElement('input');
-  deleteBtn.type = 'button';
-  deleteBtn.value = 'Delete';
-  deleteBtn.addEventListener('click', uiDeleteSecret);
-
-  var titleSpan = document.createElement('span');
-  titleSpan.textContent = title.substring(14);
-
-  var br = document.createElement('br');
-
-  var hashSpan = document.createElement('span');
-  hashSpan.textContent = hashedTitle;
-  hashSpan.style.display = 'none';
-
-  elem.appendChild(hashSpan);
-  elem.appendChild(titleSpan);
-  elem.appendChild(br);
-  elem.appendChild(btn);
-
-  if(currentUser.keys[hashedTitle].rights > 0){
-    elem.appendChild(editBtn);
-  }
-  if(currentUser.keys[hashedTitle].rights > 1){
-    elem.appendChild(shareBtn);
-  }
-  elem.appendChild(deleteBtn);
-
-  return elem;
 }
 
 function getSecretList(){

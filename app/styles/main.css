@@ -4,6 +4,11 @@ body{
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+ul{
+    list-style-type: none;
+    -webkit-padding-start: 0px;
+}
+
 #menu {
     width: 100%;
     list-style-type:none;
@@ -308,6 +313,7 @@ h2 {
 }
 
 #secretTitle, #secretContent, #showSecretContent, #editSecretContent {
+    margin-bottom: 20px;
     border: solid 5px #4F628E;
 }
 
@@ -352,6 +358,35 @@ h2 {
 
 .secretElem:last-child{
     border-bottom-style: solid;
+}
+
+.showSecretFieldLabel {
+  display:block;
+  float:left;
+  width:30%;
+  height:43px;
+  line-height: 43px;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.showSecretFieldContent {
+  display:block;
+  float:left;
+  width:45%;
+}
+
+#showSecretFields li {
+  margin-bottom: 10px;
+}
+
+#addSecretFields {
+  margin: auto;
+}
+
+#addSecretFields li {
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 #sharedUsers{
@@ -418,6 +453,7 @@ h2 {
     font-size: 1.1em;
 }
 
+
 .iconList {
     margin-left: 10px;
     cursor: pointer;
@@ -427,6 +463,41 @@ h2 {
     font-size: 1.1em;
 }
 
+.copyButton {
+  display: block;
+  height: 43px;
+  line-height: 43px;
+  position: relative;
+  float: left;
+  margin-left: 30px;
+}
+
+.iconDelete {
+    display: inline-block;
+    vertical-align:center;
+    float : right;
+    height: 23px;
+    line-height: 23px;
+    padding:10px;
+    cursor: pointer;
+    font-size: 2em;
+}
+
+.iconDelete:hover {
+    font-size: 2.1em;
+}
+
+.bottomIcon {
+    font-size: 2em;
+    margin: auto;
+    position:relative;
+    top:0px;
+}
+
+.bottomIcon:hover {
+    font-size: 2.1em;
+}
+
 #db{
     width: 90%;
     height: 300px;
@@ -434,4 +505,13 @@ h2 {
 
 #search {
     width: 80%;
+}
+
+.clearfix:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
 }

@@ -50,12 +50,12 @@ API.prototype.addSecret = function(user, secretObject){
           secret: secretObject.secret,
           iv: secretObject.iv,
           users: [secretObject.hashedUsername]
-        }
+        };
         _this.db.users[secretObject.hashedUsername].keys[secretObject.hashedTitle] = {
           title: secretObject.encryptedTitle,
           key: secretObject.wrappedKey,
           rights: 2
-        }
+        };
       }
       else{
         throw('Secret already exists');
@@ -65,7 +65,7 @@ API.prototype.addSecret = function(user, secretObject){
       throw('User not found');
     }
   });
-}
+};
 
 API.prototype.deleteSecret = function(user, hashedTitle){
   var _this = this;
@@ -160,7 +160,6 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
 API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFriendUsername){
   var _this = this;
   var hashedUsername;
-  var hashedFriendUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return SHA256(friendName);
@@ -215,7 +214,7 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
             title: sharedSecretObject.encryptedTitle,
             key: sharedSecretObject.wrappedKey,
             rights: rights
-          }
+          };
           if(_this.db.secrets[hashedTitle].users.indexOf(sharedSecretObject.friendName) < 0){
             _this.db.secrets[hashedTitle].users.push(sharedSecretObject.friendName);
           }
@@ -244,7 +243,7 @@ API.prototype.retrieveUser = function(username, hash, isHashed){
     }
     else{
       SHA256(username).then(function(hashedUsernameR){
-        resolve(bytesToHexString(hashedUsernameR))
+        resolve(bytesToHexString(hashedUsernameR));
       });
     }
   }).then(function(hashedUsernameR){
@@ -319,10 +318,10 @@ API.prototype.getSecret = function(hash){
   var _this = this;
   return new Promise(function(resolve, reject){
     if(typeof _this.db.secrets[hash] === 'undefined'){
-      reject('Invalid secret')
+      reject('Invalid secret');
     }
     else{
-      resolve(_this.db.secrets[hash])
+      resolve(_this.db.secrets[hash]);
     }
   });
 };
