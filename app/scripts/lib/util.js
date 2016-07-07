@@ -49,7 +49,7 @@ function bytesToASCIIString(bytes){
 }
 
 function generateRandomString(length){
-  var charset = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789 !"#$%&\'()*+,-./:;<=>?@[\]^_`{}~';
+  var charset = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789 !"#$%&\'()*+,-./:;<=>?@[\\]_{}';
   var randomValues = new Uint8Array(length);
   crypto.getRandomValues(randomValues);
   var string = '';

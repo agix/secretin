@@ -48,10 +48,8 @@ gulp.task('buildElectron', function() {
     [
       'app/scripts/mainElectron.js',
       'app/scripts/User.js',
-      'app/scripts/Secret.js',
       'app/scripts/APIAlone.js',
       'app/scripts/lib/**',
-      'app/scripts/ui.js',
       'app/scripts/typeElectron.js'
     ]
   )

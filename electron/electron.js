@@ -18,16 +18,34 @@ let win;
 
 var fakeClipboard = '';
 
-ipcMain.on('changeClipboard', (event, arg) => {
-  fakeClipboard = arg;
-  event.returnValue = true;
-});
-
 
 function createWindow() {
   // Create the browser window.
-  win = new BrowserWindow({width: 800, height: 600});
-  // win.setMenu(null)
+  if(process.argv[2] === 'preLogon'){
+    win = new BrowserWindow({width: 800, height: 600, frame: false});
+    win.setClosable(false);
+
+    var shortcut = 'Ctrl+V'
+    globalShortcut.register(shortcut, () => {
+      setTimeout(function(){
+        robot.typeString(fakeClipboard);
+        fakeClipboard = '';
+      }, 500);
+    });
+
+    ipcMain.on('changeClipboard', (event, arg) => {
+      fakeClipboard = arg;
+      win.minimize();
+      event.returnValue = true;
+    });
+  }
+  else{
+    win = new BrowserWindow({width: 800, height: 600});
+    ipcMain.on('changeClipboard', (event, arg) => { // prevent freeze in non-preLogon mode
+      event.returnValue = true;
+    });
+  }
+  win.setMenu(null)
 
   // and load the index.html of the app.
   win.loadURL(`file://${__dirname}/index.html`);
@@ -35,22 +53,12 @@ function createWindow() {
   // Open the DevTools.
   // win.webContents.openDevTools();
 
-  win.setClosable(false);
-
   // Emitted when the window is closed.
   win.on('closed', (e) => {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-  });
-
-  var shortcut = 'Ctrl+V'
-  globalShortcut.register(shortcut, () => {
-    setTimeout(function(){
-      robot.typeString(fakeClipboard);
-      fakeClipboard = '';
-    }, 500);
   });
 }
 

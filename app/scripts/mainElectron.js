@@ -20,6 +20,7 @@ document.getElementById('getKeys').addEventListener('click', function(e){
     document.getElementById('userTitle').textContent = currentUser.username+'\'s secrets';
     document.getElementById('secrets').style.display = '';
     document.getElementById('login').style.display = 'none';
+    setTimeout(function() { destroyUser(currentUser); currentUser = {}; }, 60000);
     getSecretList(currentUser);
   }, function(err){
     btn.disabled = false;
@@ -81,11 +82,11 @@ function specialInput(parent, secret, inputPosition){
   copyA.title = 'Copy';
   copyA.addEventListener('click', function(e){
     var input = e.target.parentNode.childNodes[inputPosition];
-    // input.type = 'text';
-    // input.select();
-    // document.execCommand('copy');
+    input.type = 'text';
+    input.select();
+    document.execCommand('copy');
     ipcRenderer.sendSync('changeClipboard', input.value);
-    // input.type = 'password';
+    input.type = 'password';
   });
 
   parent.appendChild(labelA);
