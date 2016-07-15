@@ -445,8 +445,6 @@ h2 {
 .icon {
     margin-left: 10px;
     cursor: pointer;
-    position:absolute;
-    top:50%;
 }
 
 .icon:hover {
@@ -473,13 +471,6 @@ h2 {
 }
 
 .iconDelete {
-    display: inline-block;
-    vertical-align:center;
-    float : right;
-    height: 23px;
-    line-height: 23px;
-    padding:10px;
-    cursor: pointer;
     font-size: 2em;
 }
 

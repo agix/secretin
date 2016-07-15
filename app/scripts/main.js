@@ -16,7 +16,7 @@ document.getElementById('newUser').addEventListener('click', function(e) {
     document.getElementById('secrets').style.display = '';
     document.getElementById('login').style.display = 'none';
     document.getElementById('deco').style.display = '';
-    getSecretList(currentUser);
+    getSecretList();
   }, function(err){
     btn.disabled = false;
     btn.value = 'Generate';
@@ -43,7 +43,7 @@ document.getElementById('getKeys').addEventListener('click', function(e){
     document.getElementById('secrets').style.display = '';
     document.getElementById('login').style.display = 'none';
     document.getElementById('deco').style.display = '';
-    getSecretList(currentUser);
+    getSecretList();
   }, function(err){
     btn.disabled = false;
     btn.value = 'Get keys';
@@ -52,57 +52,114 @@ document.getElementById('getKeys').addEventListener('click', function(e){
   });
 });
 
-document.getElementById('addSecret').addEventListener('click', function(e){
+document.getElementById('addSecretPopup').addEventListener('click', function(e){
+  var secret = new Secret();
+  document.getElementById('popupTitle').textContent = 'Add secret';
+  var secretContent = document.getElementById('secretContent');
 
-  var title = document.getElementById('secretTitle').value;
+  var title = document.createElement('input');
+  title.type = 'text';
+  title.placeholder = 'Secret title';
 
-  var newSecret = new Secret();
+  var addSecretBtn = document.createElement('input');
+  addSecretBtn.type = 'button';
+  addSecretBtn.classList.add('btn3');
+  addSecretBtn.value = 'Add Secret';
+  addSecretBtn.addEventListener('click', function(e){
+    addSecret(title.value, secret.toString()).then(function(){
+      secret.destroy();
+      cleanElement(secretContent);
+      document.getElementById('popupTitle').value = '';
+      document.location.href = '#keys';
+      getSecretList();
+    }, function(err){
+      alert(err);
+      throw(err);
+    });
 
-  var fieldsList = document.getElementById('addSecretFields');
-  var fields = fieldsList.getElementsByTagName("li");
+  });
 
-  for (var i = 0; i < fields.length; ++i) {
+  secretContent.appendChild(title);
+  secret.draw(secretContent);
 
-    var li = fields[i];
+  cleanElement(document.getElementById('popupBottom'));
+  document.getElementById('popupBottom').appendChild(addSecretBtn);
 
-    var label = li.querySelector('.editableFieldLabel');
-    var content = li.querySelector('.editableFieldContent');
-
-    newSecret.fields.push({'label' : label.value, 'content' : content.value});
-  }
-
-  addSecret(title, newSecret.toString()).then(function(){
-    uiResetAddSecretFields();
-    document.getElementById('secretTitle').value = '';
+  var popupClose = document.createElement('a');
+  popupClose.classList.add('close');
+  popupClose.textContent = '×';
+  popupClose.addEventListener('click', function(e){
+    secret.destroy();
+    cleanElement(secretContent);
+    document.getElementById('popupTitle').value = '';
     document.location.href = '#keys';
-    getSecretList(currentUser);
-  }, function(err){
-    alert(err);
-    throw(err);
   });
 
+  var secretPopup = document.getElementById('secretPopup').querySelector('.popup');
+  secretPopup.insertBefore(popupClose, secretContent);
 });
 
-document.getElementById('addSecretField').addEventListener('click', function(e){
 
-  var fieldsList = document.getElementById('addSecretFields');
-  var fields = fieldsList.getElementsByTagName("li");
+function showSecretPopup(e){
 
-  var newLi = fields[0].cloneNode(true);
+  var hashedTitle  = e.path[1].children[0].textContent;
+  var title  = e.path[1].children[1].textContent;
 
-  newLi.querySelector('.editableFieldLabel').value = '';
-  newLi.querySelector('.editableFieldContent').value = '';
+  getSecret(hashedTitle).then(function(secretDatas){
+    var secret = new Secret(secretDatas);
+    var secretContent = document.getElementById('secretContent');
+    document.getElementById('popupTitle').textContent = title;
+    secret.draw(secretContent);
 
-  newLi.querySelector('.iconDelete').addEventListener('click', function(e){
-    uiDeleteField(e.target.parentNode);
+    var editSecretBtn = document.createElement('input');
+    editSecretBtn.type = 'button';
+    editSecretBtn.classList.add('btn3');
+    editSecretBtn.value = 'Edit Secret';
+    editSecretBtn.addEventListener('click', function(e){
+      if(e.target.value === 'Edit Secret'){
+        e.target.value = 'Save Secret';
+        secret.editable = true;
+        secret.redraw();
+      }
+      else{
+        editSecret(hashedTitle, secret.toString()).then(function(){
+          secret.editable = false;
+          secret.redraw();
+          e.target.value = 'Edit Secret';
+        }, function(err){
+          alert(err);
+          throw(err);
+        });
+      }
+    });
+
+    cleanElement(document.getElementById('popupBottom'));
+    if(currentUser.keys[hashedTitle].rights > 0){
+      document.getElementById('popupBottom').appendChild(editSecretBtn);
+    }
+
+    document.location.hash = '#secretPopup';
+
+    var popupClose = document.createElement('a');
+    popupClose.classList.add('close');
+    popupClose.textContent = '×';
+    popupClose.addEventListener('click', function(e){
+      secret.destroy();
+      cleanElement(secretContent);
+      document.getElementById('popupTitle').value = '';
+      document.location.href = '#keys';
+    });
+
+    var secretPopup = document.getElementById('secretPopup').querySelector('.popup');
+    secretPopup.insertBefore(popupClose, secretContent);
   });
+}
 
-  fieldsList.appendChild(newLi);
-});
-
-document.getElementById('addSecretFields').querySelector('.iconDelete').addEventListener('click', function(e){
-  uiDeleteField(e.target.parentNode);
-});
+function cleanElement(elem){
+  while (elem.firstChild) {
+    elem.removeChild(elem.firstChild);
+  }
+}
 
 document.getElementById('changePasswordBtn').addEventListener('click', function(e) {
   var btn = e.target;
@@ -138,24 +195,6 @@ document.getElementById('deco').addEventListener('click', function(e){
   currentUser = {};
 });
 
-document.getElementById('hideSecret').addEventListener('click', function(e){
-  var content = document.getElementById('showSecretContent');
-  for (var c in content.childNodes) {
-    var child = content.childNodes[c];
-    if( child instanceof Element && child.id != 'hideSecret') {
-      content.removeChild(child);
-    }
-  }
-  document.location.href = '#keys';
-});
-
-document.getElementById('closeEditSecret').addEventListener('click', function(e){
-  document.getElementById('editSecretTitle').textContent = '';
-  document.getElementById('editSecretContent').value = '';
-  document.getElementById('editSecretHash').value = '';
-  document.location.href = '#keys';
-});
-
 document.getElementById('closeShareSecret').addEventListener('click', function(e){
   document.getElementById('shareSecretTitle').textContent = '';
   document.getElementById('shareSecretHash').value = '';
@@ -164,17 +203,6 @@ document.getElementById('closeShareSecret').addEventListener('click', function(e
     sharedUsersList.removeChild(sharedUsersList.firstChild);
   }
   document.location.href = '#keys';
-});
-
-document.getElementById('saveSecret').addEventListener('click', function(e){
-  var hashedTitle = document.getElementById('editSecretHash').value;
-  var content = document.getElementById('editSecretContent').value;
-  editSecret(hashedTitle, content).then(function(){
-    alert('Secret saved');
-  }, function(err){
-    alert(err);
-    throw(err);
-  });
 });
 
 document.getElementById('share').addEventListener('click', function(e){
@@ -217,27 +245,15 @@ function unshare(e){
 document.getElementById('refresh').addEventListener('click', function(e){
   document.getElementById('search').value = '';
   refreshKeys().then(function(){
-    getSecretList(currentUser);
+    getSecretList();
   }, function(err){
     alert(err);
     throw(err);
   });
 });
 
-// document.getElementById('generatePwd').addEventListener('click', function(e){
-//   document.getElementById('secretContent').value = generateRandomString(30);
-// });
-
-// document.getElementById('editGeneratePwd').addEventListener('click', function(e){
-//   document.getElementById('editSecretContent').value = generateRandomString(30);
-// });
-
 document.getElementById('changePasswordA').addEventListener('click', function(e){
   setTimeout(function(){ document.getElementById('changePasswordInput').focus(); }, 100);
-});
-
-document.getElementById('addSecretPopupA').addEventListener('click', function(e) {
-  setTimeout(function(){ document.getElementById('secretTitle').focus(); }, 100);
 });
 
 document.getElementById('search').addEventListener('keyup', function(e){
@@ -301,40 +317,13 @@ function destroyUser(user){
   user.disconnect();
 }
 
-function show(e){
+document.getElementById('editSecret').addEventListener('click', function(e){
+  var popup = document.getElementById('showSecret');
+  var content = popup.getElementsByClassName('content')[0];
 
-  var hashedTitle  = e.path[1].children[0].textContent;
-  var title  = e.path[1].children[1].textContent;
-
-  getSecret(hashedTitle).then(function(secretContent){
-    var secret = new Secret(secretContent);
-
-    var fieldsUI = uiSecretFields(secret);
-
-    var popup = document.getElementById('showSecret');
-    var content = popup.getElementsByClassName('content')[0];
-
-    var hideButton = document.getElementById('hideSecret');
-
-    content.insertBefore(fieldsUI, hideButton);
-
-    document.getElementById('showSecretTitle').textContent = title;
-
-    document.location.hash = '#showSecret';
-  });
-}
-
-function uiEditSecret(e){
-  var hashedTitle = e.path[1].children[0].textContent;
-  var title  = e.path[1].children[1].textContent;
-
-  getSecret(hashedTitle).then(function(secret){
-    document.getElementById('editSecretHash').value = hashedTitle;
-    document.getElementById('editSecretTitle').textContent = title;
-    document.getElementById('editSecretContent').value = secret;
-    document.location.hash = '#editSecret';
-  });
-}
+  document.getElementById('saveSecret').style.display = '';
+  document.getElementById('hideSecret').textContent = 'Cancel';
+});
 
 function uiDeleteSecret(e){
   var title       = e.path[1].children[1].textContent;
@@ -342,7 +331,7 @@ function uiDeleteSecret(e){
   var sure = confirm('Are you sure to delete ' + title + '?');
   if(sure){
     deleteSecret(hashedTitle).then(function(){
-      getSecretList(currentUser);
+      getSecretList();
     }, function(err){
       alert(err);
       throw(err);
@@ -374,13 +363,14 @@ function share(e, hashedTitle, title){
 
 function getSecretList(){
   var secretsList = document.getElementById('secretsList');
-  var oldElems = document.querySelectorAll('.secretElem');
+  var oldElems = secretsList.querySelectorAll('.secretElem');
+
   for (var i = 0; i < oldElems.length; i++) {
     secretsList.removeChild(oldElems[i]);
   }
   currentUser.decryptTitles().then(function(){
     Object.keys(currentUser.titles).forEach(function(hashedTitle){
-      secretsList.appendChild(uiSecret(hashedTitle, currentUser.titles[hashedTitle]));
+      secretsList.appendChild(uiSecretList(hashedTitle, currentUser.titles[hashedTitle]));
     });
   });
   document.getElementById('search').focus();
