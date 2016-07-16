@@ -109,6 +109,13 @@ Secret.prototype.redraw = function(){
   for (var i = 0; i < this.fields.length; ++i) {
     fieldsList.appendChild(this.newField(this.fields[i]), i);
   }
+  var iconAdd = this.parent.querySelector('.bottomIcon');
+  if(this.editable !== true){
+    iconAdd.style.display = 'none';
+  }
+  else{
+    iconAdd.style.display = '';
+  }
 };
 
 Secret.prototype.draw = function(parent){
