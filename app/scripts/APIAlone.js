@@ -314,15 +314,21 @@ API.prototype.getUser = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getSecret = function(hash){
+API.prototype.getSecret = function(hash, user){
   var _this = this;
-  return new Promise(function(resolve, reject){
-    if(typeof _this.db.secrets[hash] === 'undefined'){
-      reject('Invalid secret');
-    }
-    else{
-      resolve(_this.db.secrets[hash]);
-    }
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return new Promise(function(resolve, reject){
+      if(typeof _this.db.secrets[hash] === 'undefined'){
+        reject('Invalid secret');
+      }
+      else{
+        resolve(_this.db.secrets[hash]);
+      }
+    });
   });
 };
 

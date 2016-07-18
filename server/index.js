@@ -46,23 +46,50 @@ function checkToken(name, token, callback){
   });
 }
 
+function checkBruteforce(ip, hash, callback){
+  if(hash === 'undefined'){
+    callback(false);
+  }
+  else{
+    client.get('bf_'+ip, function(err, res){
+      if(res === null){
+        client.setex('bf_'+ip, 60, 1, function(err, res){
+          callback(false);
+        });
+      }
+      else{
+        var count = parseInt(res);
+        client.setex('bf_'+ip, count*60, count+1, function(err, res){
+          if(count > 5){
+            callback(true);
+          }
+          else{
+            callback(false);
+          }
+        });
+      }
+    });
+  }
+}
 
 // get user keys
 app.get('/user/:name/:hash', function (req, res) {
   userExists(req.params.name, function(exists, user){
     if(exists){
-      var md = forge.md.sha256.create();
-      md.update(req.params.hash+OPTIONAL_SALT);
-      // if it's wrong password send fake private key
-      if(md.digest().toHex() !== user.pass.hash){
-        user.privateKey = {
-          privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
-          iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
-        };
-        user.keys = {};
-        user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
-      }
-      res.json(user);
+        checkBruteforce(req.ip, req.params.hash, function(isBruteforce){
+          var md = forge.md.sha256.create();
+          md.update(req.params.hash+OPTIONAL_SALT);
+          // if it's wrong password send fake private key
+          if(isBruteforce || md.digest().toHex() !== user.pass.hash){
+            user.privateKey = {
+              privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+              iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+            };
+            user.keys = {};
+            user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+          }
+          res.json(user);
+        });
     }
     else{
       res.writeHead(404, 'User not found', {});
@@ -76,33 +103,35 @@ app.get('/database/:name/:hash', function (req, res) {
   var db = {users : {}, secrets: {}};
   userExists(req.params.name, function(exists, user){
     if(exists){
-      var md = forge.md.sha256.create();
-      md.update(req.params.hash + OPTIONAL_SALT);
-      if(md.digest().toHex() !== user.pass.hash){
-        user.privateKey = {
-          privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
-          iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
-        };
-        user.keys = {};
-        user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
-      }
+      checkBruteforce(req.ip, req.params.hash, function(isBruteforce){
+        var md = forge.md.sha256.create();
+        md.update(req.params.hash + OPTIONAL_SALT);
+        if(isBruteforce || md.digest().toHex() !== user.pass.hash){
+          user.privateKey = {
+            privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+            iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+          };
+          user.keys = {};
+          user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+        }
 
-      db.users[req.params.name] = user;
-      var hashedTitles = Object.keys(user.keys);
-      if(hashedTitles.length !== 0){
-        hashedTitles.forEach(function(hashedTitle){
-          secretExists(hashedTitle, function(exists, secret){
-            db.secrets[hashedTitle] = secret;
-            db.secrets[hashedTitle].users = [req.params.name];
-            if(Object.keys(db.secrets).length === hashedTitles.length){
-              res.json(db);
-            }
+        db.users[req.params.name] = user;
+        var hashedTitles = Object.keys(user.keys);
+        if(hashedTitles.length !== 0){
+          hashedTitles.forEach(function(hashedTitle){
+            secretExists(hashedTitle, function(exists, secret){
+              db.secrets[hashedTitle] = secret;
+              db.secrets[hashedTitle].users = [req.params.name];
+              if(Object.keys(db.secrets).length === hashedTitles.length){
+                res.json(db);
+              }
+            });
           });
-        });
-      }
-      else{
-        res.json(db);
-      }
+        }
+        else{
+          res.json(db);
+        }
+      });
     }
     else{
       res.writeHead(404, 'User not found', {});
@@ -113,16 +142,24 @@ app.get('/database/:name/:hash', function (req, res) {
 
 //get secret
 app.get('/secret/:title', function (req, res) {
-  secretExists(req.params.title, function(exists, secret){
-    if(exists){
-      res.json(secret);
+  checkToken(req.query.name, req.query.token, function(valid){
+    if(valid){
+      secretExists(req.params.title, function(exists, secret){
+        if(exists && secret.users.indexOf(req.query.name) !== -1){
+          res.json(secret);
+        }
+        else{
+          res.json({
+            secret: forge.util.bytesToHex((forge.random.getBytesSync(128))),
+            iv: forge.util.bytesToHex((forge.random.getBytesSync(16))),
+            users: [forge.util.bytesToHex((forge.random.getBytesSync(32)))]
+          });
+        }
+      });
     }
     else{
-      res.json({
-        secret: forge.util.bytesToHex((forge.random.getBytesSync(128))),
-        iv: forge.util.bytesToHex((forge.random.getBytesSync(16))),
-        users: [forge.util.bytesToHex((forge.random.getBytesSync(32)))]
-      });
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
     }
   });
 });

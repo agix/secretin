@@ -179,9 +179,15 @@ API.prototype.getUser = function(username, hash, isHashed){
   });
 };
 
-API.prototype.getSecret = function(hashedTitle){
+API.prototype.getSecret = function(hashedTitle, user){
   var _this = this;
-  return GET(_this.db+'/secret/'+hashedTitle);
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return GET(_this.db+'/secret/'+hashedTitle+'?name='+hashedUsername+'&token='+bytesToHexString(token));
+  });
 };
 
 API.prototype.getDb = function(username, hash, isHashed){
