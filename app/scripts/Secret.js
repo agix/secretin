@@ -106,8 +106,8 @@ Secret.prototype.newField = function(data, index){
 Secret.prototype.redraw = function(){
   this.wipe();
   var fieldsList = this.parent.getElementsByTagName('ul')[0];
-  for (var i = 0; i < this.fields.length; ++i) {
-    fieldsList.appendChild(this.newField(this.fields[i]), i);
+  for (var i = 0; i < this.fields.length; i++) {
+    fieldsList.appendChild(this.newField(this.fields[i], i));
   }
   var iconAdd = this.parent.querySelector('.bottomIcon');
   if(this.editable !== true){
@@ -124,8 +124,8 @@ Secret.prototype.draw = function(parent){
   this.wipe();
 
   var fieldsList = document.createElement('ul');
-  for (var i = 0; i < this.fields.length; ++i) {
-    fieldsList.appendChild(this.newField(this.fields[i]), i);
+  for (var i = 0; i < this.fields.length; i++) {
+    fieldsList.appendChild(this.newField(this.fields[i], i));
   }
 
   var iconAdd = document.createElement('a');
@@ -149,7 +149,7 @@ Secret.prototype.addField = function(){
   var fieldsList = this.parent.getElementsByTagName('ul')[0];
   var newFieldData = {label: '', content: ''};
   this.fields.push(newFieldData);
-  fieldsList.appendChild(this.newField(newFieldData, this.fields.length));
+  fieldsList.appendChild(this.newField(newFieldData, this.fields.length-1));
 
   fieldsList.childNodes[0].querySelector('.iconDelete').style.display = '';
 };
@@ -170,7 +170,7 @@ Secret.prototype.getDatas = function(){
 
 Secret.prototype.deleteField = function(index){
   this.getDatas();
-  this.fields.splice(index-1, 1);
+  this.fields.splice(index, 1);
   this.redraw();
 };
 

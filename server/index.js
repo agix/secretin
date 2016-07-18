@@ -46,11 +46,14 @@ function checkToken(name, token, callback){
   });
 }
 
+
+// get user keys
 app.get('/user/:name/:hash', function (req, res) {
   userExists(req.params.name, function(exists, user){
     if(exists){
       var md = forge.md.sha256.create();
       md.update(req.params.hash+OPTIONAL_SALT);
+      // if it's wrong password send fake private key
       if(md.digest().toHex() !== user.pass.hash){
         user.privateKey = {
           privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
@@ -68,6 +71,7 @@ app.get('/user/:name/:hash', function (req, res) {
   });
 });
 
+//get database export
 app.get('/database/:name/:hash', function (req, res) {
   var db = {users : {}, secrets: {}};
   userExists(req.params.name, function(exists, user){
@@ -107,6 +111,7 @@ app.get('/database/:name/:hash', function (req, res) {
   });
 });
 
+//get secret
 app.get('/secret/:title', function (req, res) {
   secretExists(req.params.title, function(exists, secret){
     if(exists){
@@ -122,6 +127,8 @@ app.get('/secret/:title', function (req, res) {
   });
 });
 
+
+//create user
 app.post('/user/:name', function (req, res) {
   userExists(req.params.name, function(exists){
     if(exists){
@@ -149,6 +156,7 @@ app.post('/user/:name', function (req, res) {
   });
 });
 
+//update password
 app.put('/user/:name', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -189,6 +197,7 @@ app.put('/user/:name', function (req, res) {
   });
 });
 
+//create secret
 app.post('/user/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -252,6 +261,7 @@ app.post('/user/:name/:title', function (req, res) {
   });
 });
 
+//delete secret
 app.delete('/user/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -347,6 +357,7 @@ app.get('/challenge/:name', function (req, res) {
   });
 });
 
+//update secret
 app.post('/edit/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -395,6 +406,7 @@ app.post('/edit/:name/:title', function (req, res) {
   });
 });
 
+//generate new intermetiade key and reshare
 app.post('/newKey/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -475,6 +487,7 @@ app.post('/newKey/:name/:title', function (req, res) {
   });
 });
 
+//unshare a secret
 app.post('/unshare/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
@@ -558,6 +571,7 @@ app.post('/unshare/:name/:title', function (req, res) {
   });
 });
 
+// share a secret
 app.post('/share/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
