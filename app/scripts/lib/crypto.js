@@ -50,7 +50,7 @@ function encryptAESGCM256(secret, key){
         iv: iv,
         tagLength: 128
       };
-      var data = asciiToUint8Array(secret);
+      var data = asciiToUint8Array(JSON.stringify(secret));
       result.key = key;
       result.iv = iv;
       return crypto.subtle.encrypt(algorithm, key, data);
@@ -68,7 +68,7 @@ function encryptAESGCM256(secret, key){
       iv: iv,
       tagLength: 128
     };
-    var data = asciiToUint8Array(secret);
+    var data = asciiToUint8Array(JSON.stringify(secret));
     result.iv = iv;
     return crypto.subtle.encrypt(algorithm, key, data).then(function(encryptedSecret){
       result.secret = encryptedSecret;

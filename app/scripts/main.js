@@ -54,6 +54,7 @@ document.getElementById('getKeys').addEventListener('click', function(e){
 
 document.getElementById('addSecretPopup').addEventListener('click', function(e){
   var secret = new Secret();
+
   document.getElementById('popupTitle').textContent = 'Add secret';
   var secretContent = document.getElementById('secretContent');
 
@@ -66,7 +67,8 @@ document.getElementById('addSecretPopup').addEventListener('click', function(e){
   addSecretBtn.classList.add('btn3');
   addSecretBtn.value = 'Add Secret';
   addSecretBtn.addEventListener('click', function(e){
-    addSecret(title.value, secret.toString()).then(function(){
+    var metadatas = {title: title.value};
+    addSecret(metadatas, secret).then(function(){
       secret.destroy();
       cleanElement(secretContent);
       document.getElementById('popupTitle').value = '';
@@ -103,12 +105,12 @@ document.getElementById('addSecretPopup').addEventListener('click', function(e){
 function showSecretPopup(e){
 
   var hashedTitle  = e.path[1].children[0].textContent;
-  var title  = e.path[1].children[1].textContent;
+  var metadatas = currentUser.metadatas[hashedTitle];
 
   getSecret(hashedTitle).then(function(secretDatas){
     var secret = new Secret(secretDatas);
     var secretContent = document.getElementById('secretContent');
-    document.getElementById('popupTitle').textContent = title;
+    document.getElementById('popupTitle').textContent = metadatas.title;
     secret.draw(secretContent);
 
     var editSecretBtn = document.createElement('input');
@@ -122,7 +124,7 @@ function showSecretPopup(e){
         secret.redraw();
       }
       else{
-        editSecret(hashedTitle, secret.toString()).then(function(){
+        editSecret(hashedTitle, metadatas, secret).then(function(){
           secret.editable = false;
           secret.redraw();
           e.target.value = 'Edit Secret';
@@ -232,6 +234,8 @@ function unshare(e){
   e.target.disabled = true;
   e.target.value = 'Please wait...';
   unshareSecret(hashedTitle, friendName).then(function(){
+    return refreshKeys();
+  }).then(function(){
     share(false, hashedTitle, document.getElementById('shareSecretTitle').textContent);
   }, function(err){
     e.target.disabled = false;
@@ -350,14 +354,13 @@ function share(e, hashedTitle, title){
   document.getElementById('shareSecretTitle').textContent = title;
   document.location.hash = '#shareSecret';
 
-  getSharedUsers(hashedTitle).then(function(users){
-    var sharedUsersList = document.getElementById('sharedUsers');
-    while (sharedUsersList.firstChild) {
-      sharedUsersList.removeChild(sharedUsersList.firstChild);
-    }
-    users.forEach(function(userHash){
-      sharedUsersList.appendChild(uiSharedUsers(userHash));
-    });
+
+  var sharedUsersList = document.getElementById('sharedUsers');
+  while (sharedUsersList.firstChild) {
+    sharedUsersList.removeChild(sharedUsersList.firstChild);
+  }
+  Object.keys(currentUser.metadatas[hashedTitle].users).forEach(function(user){
+    sharedUsersList.appendChild(uiSharedUsers(user));
   });
 }
 
@@ -368,9 +371,9 @@ function getSecretList(){
   for (var i = 0; i < oldElems.length; i++) {
     secretsList.removeChild(oldElems[i]);
   }
-  currentUser.decryptTitles().then(function(){
-    Object.keys(currentUser.titles).forEach(function(hashedTitle){
-      secretsList.appendChild(uiSecretList(hashedTitle, currentUser.titles[hashedTitle]));
+  getAllMetadatas().then(function(){
+    Object.keys(currentUser.metadatas).forEach(function(hashedTitle){
+      secretsList.appendChild(uiSecretList(hashedTitle, currentUser.metadatas[hashedTitle].title));
     });
   });
   document.getElementById('search').focus();

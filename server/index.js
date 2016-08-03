@@ -98,6 +98,29 @@ app.get('/user/:name/:hash', function (req, res) {
   });
 });
 
+// get user by token
+app.get('/user/:name', function (req, res) {
+  userExists(req.params.name, function(exists, user){
+    if(exists){
+      checkToken(req.params.name, req.query.token, function(valid){
+        if(!valid){
+          user.privateKey = {
+            privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+            iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+          };
+          user.keys = {};
+          user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+        }
+        res.json(user);
+      });
+    }
+    else{
+      res.writeHead(404, 'User not found', {});
+      res.end();
+    }
+  });
+});
+
 //get database export
 app.get('/database/:name/:hash', function (req, res) {
   var db = {users : {}, secrets: {}};
@@ -154,6 +177,31 @@ app.get('/secret/:title', function (req, res) {
             iv: forge.util.bytesToHex((forge.random.getBytesSync(16))),
             users: [forge.util.bytesToHex((forge.random.getBytesSync(32)))]
           });
+        }
+      });
+    }
+    else{
+      res.writeHead(403, 'Token invalid', {});
+      res.end();
+    }
+  });
+});
+
+//get all metadatas
+app.get('/allMetadatas/:name', function (req, res) {
+  checkToken(req.params.name, req.query.token, function(valid){
+    if(valid){
+      db.view('secrets/getMetadatas', { key: req.params.name }, function (err, doc) {
+        if(err === null && typeof doc !== 'undefined'){
+          var allMetadatas = {};
+          doc.forEach(function(metadatas){
+            allMetadatas[metadatas.res.title] = {iv: metadatas.res.iv_meta, secret: metadatas.res.metadatas};
+          });
+          res.json(allMetadatas);
+        }
+        else{
+          console.log(err);
+          res.writeHead(500, 'Unknown error', {});
         }
       });
     }
@@ -251,11 +299,12 @@ app.post('/user/:name/:title', function (req, res) {
               doc.secret[req.params.title] = {
                 secret: req.body.secret,
                 iv: req.body.iv,
+                metadatas: req.body.metadatas,
+                iv_meta: req.body.iv_meta,
                 users: [req.params.name]
               };
 
               user.keys[req.params.title] = {
-                title: req.body.title,
                 key: req.body.key,
                 rights: 2
               };
@@ -407,6 +456,8 @@ app.post('/edit/:name/:title', function (req, res) {
                 secretDoc.secret[req.params.title] = secret
                 secretDoc.secret[req.params.title].iv = req.body.iv;
                 secretDoc.secret[req.params.title].secret = req.body.secret;
+                secretDoc.secret[req.params.title].iv_meta = req.body.iv_meta;
+                secretDoc.secret[req.params.title].metadatas = req.body.metadatas;
                 db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
                   if(err === null && ret.ok === true){
                     res.writeHead(200, 'Secret updated', {});
@@ -452,8 +503,10 @@ app.post('/newKey/:name/:title', function (req, res) {
           userExists(req.params.name, function(uExists, user, metaUser){
             if(uExists){
               if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
-                secret.secret = req.body.secret.secret;
-                secret.iv = req.body.secret.iv;
+                secret.secret    = req.body.secret.secret;
+                secret.iv        = req.body.secret.iv;
+                secret.iv_meta   = req.body.secret.iv_meta;
+                secret.metadatas = req.body.secret.metadatas;
 
                 var secretDoc = {secret: {}};
                 secretDoc.secret[req.params.title] = secret;
@@ -626,7 +679,6 @@ app.post('/share/:name/:title', function (req, res) {
                       secretDoc.secret[req.params.title] = secret
 
                       fUser.keys[req.params.title] = {
-                        title: req.body.title,
                         key: req.body.key,
                         rights: req.body.rights
                       };

@@ -48,11 +48,12 @@ API.prototype.addSecret = function(user, secretObject){
       if(typeof _this.db.secrets[secretObject.hashedTitle] === 'undefined'){
         _this.db.secrets[secretObject.hashedTitle] = {
           secret: secretObject.secret,
+          metadatas: secretObject.metadatas,
           iv: secretObject.iv,
+          iv_meta: secretObject.iv_meta,
           users: [secretObject.hashedUsername]
         };
         _this.db.users[secretObject.hashedUsername].keys[secretObject.hashedTitle] = {
-          title: secretObject.encryptedTitle,
           key: secretObject.wrappedKey,
           rights: 2
         };
@@ -118,6 +119,8 @@ API.prototype.editSecret = function(user, secretObject, hashedTitle){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
         _this.db.secrets[hashedTitle].iv = secretObject.iv;
         _this.db.secrets[hashedTitle].secret = secretObject.secret;
+        _this.db.secrets[hashedTitle].iv_meta = secretObject.iv_meta;
+        _this.db.secrets[hashedTitle].metadatas = secretObject.metadatas;
       }
       else{
         throw('Secret not found');
@@ -138,6 +141,10 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
   }).then(function(token){
     if(typeof _this.db.users[hashedUsername] !== 'undefined'){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
+        _this.db.secrets[hashedTitle].iv = secret.iv;
+        _this.db.secrets[hashedTitle].secret = secret.secret;
+        _this.db.secrets[hashedTitle].iv_meta = secret.iv_meta;
+        _this.db.secrets[hashedTitle].metadatas = secret.metadatas;
         wrappedKeys.forEach(function(wrappedKey){
           if(typeof _this.db.users[wrappedKey.user] !== 'undefined'){
             if(typeof _this.db.users[wrappedKey.user].keys[hashedTitle] !== 'undefined'){
@@ -157,16 +164,15 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
 };
 
 
-API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFriendUsername){
+API.prototype.unshareSecret = function(user, friendName, hashedTitle){
   var _this = this;
   var hashedUsername;
+  var hashedFriendUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return SHA256(friendName);
   }).then(function(rHashedFriendUsername){
-    if(typeof(hashedFriendUsername) === 'undefined'){
-      hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
-    }
+    hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
     return user.getToken(_this);
   }).then(function(token){
     if(hashedUsername !== hashedFriendUsername){
@@ -211,7 +217,6 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
         if(typeof _this.db.users[sharedSecretObject.friendName] !== 'undefined'){
           _this.db.users[sharedSecretObject.friendName].keys[hashedTitle] = {
-            title: sharedSecretObject.encryptedTitle,
             key: sharedSecretObject.wrappedKey,
             rights: rights
           };
@@ -300,6 +305,24 @@ API.prototype.getPublicKey = function(username, isHashed){
   });
 };
 
+API.prototype.getKeysWithToken = function(user){
+  var _this = this;
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return new Promise(function(resolve, reject){
+      if(typeof _this.db.users[hashedUsername] === 'undefined'){
+        reject('User not found');
+      }
+      else{
+        resolve(_this.db.users[hashedUsername].keys);
+      }
+    });
+  });
+};
+
 API.prototype.getKeys = function(username, hash, isHashed){
   var _this = this;
   return _this.retrieveUser(username, hash, isHashed).then(function(user){
@@ -328,6 +351,25 @@ API.prototype.getSecret = function(hash, user){
       else{
         resolve(_this.db.secrets[hash]);
       }
+    });
+  });
+};
+
+API.prototype.getAllMetadatas = function(user){
+  var _this = this;
+  var hashedUsername;
+  var result = {};
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    return new Promise(function(resolve, reject){
+      var hashedTitles = Object.keys(user.keys);
+      hashedTitles.forEach(function(hashedTitle){
+        var secret = _this.db.secrets[hashedTitle];
+        result[hashedTitle] = {iv: secret.iv_meta, secret: secret.metadatas};
+      });
+      resolve(result);
     });
   });
 };

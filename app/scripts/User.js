@@ -8,7 +8,7 @@ var User = function(username) {
   _this.publicKey   = null;
   _this.privateKey  = null;
   _this.keys        = {};
-  _this.titles      = {};
+  _this.metadatas   = {};
   _this.token       = {value: '', time: 0};
 };
 
@@ -18,14 +18,14 @@ User.prototype.disconnect = function(){
   delete _this.hash;
   delete _this.publicKey;
   delete _this.privateKey;
-  delete _this.titles;
+  delete _this.metadatas;
   delete _this.keys;
   delete _this.token;
 };
 
 User.prototype.isTokenValid = function(){
   var _this = this;
-  return (_this.token.time > Date.now-10);
+  return (_this.token.time > Date.now()-10000);
 };
 
 User.prototype.getToken = function(api){
@@ -93,9 +93,6 @@ User.prototype.shareSecret = function(friend, wrappedKey, hashedTitle){
     return _this.wrapKey(key, friend.publicKey);
   }).then(function(friendWrappedKey){
     result.wrappedKey = friendWrappedKey;
-    return _this.encryptTitle(_this.titles[hashedTitle], friend.publicKey);
-  }).then(function(encryptedTitle){
-    result.encryptedTitle = encryptedTitle;
     return SHA256(friend.username);
   }).then(function(hashedUsername){
     result.friendName = bytesToHexString(hashedUsername);
@@ -103,32 +100,33 @@ User.prototype.shareSecret = function(friend, wrappedKey, hashedTitle){
   });
 };
 
-User.prototype.editSecret = function(secret, wrappedKey){
+User.prototype.editSecret = function(metadatas, secret, wrappedKey){
   var _this = this;
   var result = {};
   return _this.unwrapKey(wrappedKey).then(function(key){
-    return encryptAESGCM256(secret, key);
+    return _this.encryptSecret(metadatas, secret, key);
   }).then(function(secretObject){
-    result.secret = bytesToHexString(secretObject.secret);
-    result.iv = bytesToHexString(secretObject.iv);
+    result.secret    = secretObject.secret;
+    result.iv        = secretObject.iv;
+    result.metadatas = secretObject.metadatas;
+    result.iv_meta   = secretObject.iv_meta;
     return result;
   });
 };
 
-User.prototype.createSecret = function(title, secret){
+User.prototype.createSecret = function(metadatas, secret){
   var _this = this;
   var now = Date.now();
-  var saltedTitle = now+'|'+title;
+  var saltedTitle = now+'|'+metadatas.title;
   var result = {};
-  return _this.encryptSecret(secret).then(function(secretObject){
-    result.secret = bytesToHexString(secretObject.secret);
-    result.iv = bytesToHexString(secretObject.iv);
+  return _this.encryptSecret(metadatas, secret).then(function(secretObject){
+    result.secret    = secretObject.secret;
+    result.iv        = secretObject.iv;
+    result.metadatas = secretObject.metadatas;
+    result.iv_meta   = secretObject.iv_meta;
     return _this.wrapKey(secretObject.key, _this.publicKey);
   }).then(function(wrappedKey){
     result.wrappedKey = wrappedKey;
-    return _this.encryptTitle(saltedTitle, _this.publicKey);
-  }).then(function(encryptedTitle){
-    result.encryptedTitle = encryptedTitle;
     return SHA256(_this.username);
   }).then(function(hashedUsername){
     result.hashedUsername = bytesToHexString(hashedUsername);
@@ -139,9 +137,19 @@ User.prototype.createSecret = function(title, secret){
   });
 };
 
-User.prototype.encryptSecret = function(secret){
+User.prototype.encryptSecret = function(metadatas, secret, key){
   var _this = this;
-  return encryptAESGCM256(secret);
+  var result = {};
+  return encryptAESGCM256(secret, key).then(function(secretObject){
+    result.secret = bytesToHexString(secretObject.secret);
+    result.iv     = bytesToHexString(secretObject.iv);
+    result.key    = secretObject.key;
+    return encryptAESGCM256(metadatas, secretObject.key);
+  }).then(function(secretObject){
+    result.metadatas = bytesToHexString(secretObject.secret);
+    result.iv_meta   = bytesToHexString(secretObject.iv);
+    return result;
+  });
 };
 
 User.prototype.decryptSecret = function(secret, wrappedKey){
@@ -165,18 +173,18 @@ User.prototype.wrapKey = function(key, publicKey){
   });
 };
 
-User.prototype.decryptTitles = function(){
+User.prototype.decryptAllMetadatas = function(allMetadatas){
   var _this = this;
   return new Promise(function(resolve, reject){
     var hashedTitles = Object.keys(_this.keys);
     hashedTitles.forEach(function(hashedTitle){
-      _this.titles = {};
-      decryptRSAOAEP(_this.keys[hashedTitle].title, _this.privateKey).then(function(title){
-        _this.titles[hashedTitle] = bytesToASCIIString(title);
-        if(Object.keys(_this.titles).length === hashedTitles.length){
+      _this.metadatas = {};
+      _this.decryptSecret(allMetadatas[hashedTitle], _this.keys[hashedTitle].key).then(function(metadatas){
+        _this.metadatas[hashedTitle] = JSON.parse(metadatas);
+        if(Object.keys(_this.metadatas).length === hashedTitles.length){
           resolve();
         }
       });
     });
   });
-};
+}

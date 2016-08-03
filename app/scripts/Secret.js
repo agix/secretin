@@ -174,8 +174,14 @@ Secret.prototype.deleteField = function(index){
   this.redraw();
 };
 
-Secret.prototype.toString = function(){
-  this.getDatas();
-  return JSON.stringify({'fields': this.fields});
+Secret.prototype.toJSON = function(){
+  if(this.parent){
+    this.getDatas();
+    return {'fields': this.fields};
+  }
+  else{
+    return {};
+  }
+
 };
 

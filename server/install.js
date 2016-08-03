@@ -24,5 +24,16 @@ db.save('_design/secrets', {
               emit(key, {res: doc.secret[key], rev: doc._rev});
             }
           }
+      },
+      getMetadatas: {
+        map: function (doc) {
+          if(doc.secret){
+            var key = Object.keys(doc.secret)[0];
+            var res = doc.secret[key].users;
+            doc.secret[key].users.forEach(function(user){
+              emit(user, {res: {title: key, iv_meta: doc.secret[key].iv_meta, metadatas: doc.secret[key].metadatas}, rev: doc._rev});
+            });
+          }
+        }
       }
 });

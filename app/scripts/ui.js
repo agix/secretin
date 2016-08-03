@@ -35,7 +35,7 @@ function uiSecretList(hashedTitle, title){
   deleteBtn.addEventListener('click', uiDeleteSecret);
 
   var titleSpan = document.createElement('span');
-  titleSpan.textContent = title.substring(14);
+  titleSpan.textContent = title;
 
   var br = document.createElement('br');
 

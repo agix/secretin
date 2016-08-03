@@ -52,7 +52,7 @@ function getKeys(username, password){
 }
 
 function refreshKeys(){
-  return api.getKeys(currentUser.username, currentUser.hash).then(function(keys){
+  return api.getKeysWithToken(currentUser).then(function(keys){
     currentUser.keys = keys;
     return keys;
   }, function(err){
@@ -60,10 +60,12 @@ function refreshKeys(){
   });
 }
 
-function addSecret(title, content){
+function addSecret(metadatas, content){
   return new Promise(function(resolve, reject){
+    metadatas.users = {};
+    metadatas.users[currentUser.username] = {rights: 3};
     if(typeof(currentUser.username) === 'string'){
-      return currentUser.createSecret(title, content).then(function(secretObject){
+      return currentUser.createSecret(metadatas, content).then(function(secretObject){
         return api.addSecret(currentUser, secretObject);
       }).then(function(msg){
         resolve(refreshKeys());
@@ -91,33 +93,29 @@ function changePassword(password){
   });
 }
 
-function editSecret(hashedTitle, content){
-  return currentUser.editSecret(content, currentUser.keys[hashedTitle].key).then(function(secretObject){
+function editSecret(hashedTitle, metadatas, content){
+  return currentUser.editSecret(metadatas, content, currentUser.keys[hashedTitle].key).then(function(secretObject){
     return api.editSecret(currentUser, secretObject, hashedTitle);
   }, function(err){
     throw(err);
   });
 }
 
-function getSharedUsers(hashedTitle){
-  return api.getSecret(hashedTitle, currentUser).then(function(encryptedSecret){
-    return encryptedSecret.users;
-  }, function(err){
-    throw(err);
-  });
-}
-
 function shareSecret(hashedTitle, friendName, rights){
-  var friend;
-  return api.getSecret(hashedTitle, currentUser).then(function(encryptedSecret){
-    friend = new User(friendName);
-    return api.getPublicKey(friend.username);
-  }).then(function(publicKey){
+  var friend = new User(friendName);
+  return api.getPublicKey(friend.username).then(function(publicKey){
     return friend.importPublicKey(publicKey);
   }).then(function(){
     return currentUser.shareSecret(friend, currentUser.keys[hashedTitle].key, hashedTitle);
   }).then(function(sharedSecretObject){
     return api.shareSecret(currentUser, sharedSecretObject, hashedTitle, rights);
+  }).then(function(){
+    return api.getSecret(hashedTitle, currentUser);
+  }).then(function(encryptedSecret){
+    return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
+  }).then(function(secret){
+    currentUser.metadatas[hashedTitle].users[friend.username] = {rights: rights};
+    return editSecret(hashedTitle, currentUser.metadatas[hashedTitle], JSON.parse(secret));
   }, function(err){
     throw(err);
   });
@@ -128,16 +126,19 @@ function unshareSecret(hashedTitle, friendName){
   var encryptedSecret;
   var secret = {};
   var wrappedKeys = [];
-  return api.unshareSecret(currentUser, friendName, hashedTitle, friendName).then(function(){
+  return api.unshareSecret(currentUser, friendName, hashedTitle).then(function(){
     return api.getSecret(hashedTitle, currentUser);
   }).then(function(eSecret){
-      encryptedSecret = eSecret;
-      return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
+    encryptedSecret = eSecret;
+    return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
   }).then(function(secret){
-      return currentUser.encryptSecret(secret);
+    delete currentUser.metadatas[hashedTitle].users[friendName];
+    return currentUser.encryptSecret(currentUser.metadatas[hashedTitle], JSON.parse(secret));
   }).then(function(secretObject){
-    secret.secret = bytesToHexString(secretObject.secret);
-    secret.iv     = bytesToHexString(secretObject.iv);
+    secret.secret    = secretObject.secret;
+    secret.iv        = secretObject.iv;
+    secret.metadatas = secretObject.metadatas;
+    secret.iv_meta   = secretObject.iv_meta;
     return new Promise(function(resolve, reject){
       encryptedSecret.users.forEach(function(hashedUsername){
         api.getPublicKey(hashedUsername, true).then(function(publicKey){
@@ -159,7 +160,8 @@ function unshareSecret(hashedTitle, friendName){
 }
 
 function getSecret(hashedTitle){
-  return api.getSecret(hashedTitle, currentUser).then(function(encryptedSecret){
+  return api.getSecret(hashedTitle, currentUser).then(function(rEncryptedSecret){
+    var encryptedSecret = {secret: rEncryptedSecret.secret, iv: rEncryptedSecret.iv};
     return currentUser.decryptSecret(encryptedSecret, currentUser.keys[hashedTitle].key);
   });
 }
@@ -170,4 +172,12 @@ function deleteSecret(hashedTitle){
   }, function(err){
     throw(err);
   });
+}
+
+function getAllMetadatas(){
+  return api.getAllMetadatas(currentUser).then(function(allMetadatas){
+    return currentUser.decryptAllMetadatas(allMetadatas);
+  }, function(err){
+    throw(err);
+  })
 }

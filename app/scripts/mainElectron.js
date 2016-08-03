@@ -59,12 +59,13 @@ function getSecretList(){
   for (var i = 0; i < oldElems.length; i++) {
     secretsList.removeChild(oldElems[i]);
   }
-  currentUser.decryptTitles().then(function(){
-    Object.keys(currentUser.titles).forEach(function(hashedTitle){
-      secretsList.appendChild(uiSecret(hashedTitle, currentUser.titles[hashedTitle]));
+  getAllMetadatas().then(function(){
+    Object.keys(currentUser.metadatas).forEach(function(hashedTitle){
+      secretsList.appendChild(uiSecret(hashedTitle, currentUser.metadatas[hashedTitle].title));
     });
   });
 }
+
 
 function specialInput(parent, secret, inputPosition){
   var input = document.createElement('input');
