@@ -188,3 +188,28 @@ User.prototype.decryptAllMetadatas = function(allMetadatas){
     });
   });
 }
+
+User.prototype.decryptTitles = function(){ //Should be removed after migration
+  var _this = this;
+  return new Promise(function(resolve, reject){
+    var hashedTitles = Object.keys(_this.keys);
+    var total = hashedTitles.length;
+    hashedTitles.forEach(function(hashedTitle){
+      _this.titles = {};
+      if(typeof(_this.keys[hashedTitle].title) !== 'undefined'){
+        decryptRSAOAEP(_this.keys[hashedTitle].title, _this.privateKey).then(function(title){
+          _this.titles[hashedTitle] = bytesToASCIIString(title);
+          if(Object.keys(_this.titles).length === total){
+            resolve();
+          }
+        });
+      }
+      else{
+        total -= 1;
+        if(total === 0){
+          console.log('Every secrets migrated');
+        }
+      }
+    });
+  });
+};

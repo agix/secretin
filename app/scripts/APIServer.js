@@ -99,15 +99,16 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
   });
 };
 
-API.prototype.unshareSecret = function(user, friendName, hashedTitle){
+API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFriendUsername){
   var _this = this;
   var hashedUsername;
-  var hashedFriendUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return SHA256(friendName);
   }).then(function(rHashedFriendUsername){
-    hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
+    if(typeof(hashedFriendUsername) === 'undefined'){
+      hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
+    }
     return user.getToken(_this);
   }).then(function(token){
     return POST(_this.db+'/unshare/'+hashedUsername+'/'+hashedTitle,{

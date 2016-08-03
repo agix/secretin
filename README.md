@@ -130,7 +130,7 @@ The derivedKey use PBKDF2 with SHA-256, 256 bits random salt and 100 000 + (rand
 
 When you create a secret, you give a title and a secret content.
 
-The title is salted with the timestamp and encrypted with you public key so you can retrieve its content. It's also SHA256'ed to serve as an ID.
+The title is salted with the timestamp then SHA256'ed to serve as an ID.
 
 The secret is encrypted using AES-GCM-256 with randomly generated intermediate key.
 
@@ -142,13 +142,19 @@ This way the key is hard to BF, doesn't travel in clear on the wires and are not
 
 Any time you want to access a secret, you need to type your master password that would decrypt your private key that would decrypt the intermediate key that would decrypt the secret.
 
-Using this, it's easy to share secret. You need to know the exact username of your friend so you can find his public key to encrypt the intermediate key of the secret. You also need to encrypt the title so he can list it.
+Using this, it's easy to share secret. You need to know the exact username of your friend so you can find his public key to encrypt the intermediate key of the secret.
 
-In server saved mode every modification requests use challenge to prove user has right to do the modification. It's a simple random token encrypted with claimed user public key.
+Another field (named metadatas) is encrypted with the same intermediate key and contains the title and the list of users which can access the secret.
+
+Every metadatas fields are decrypted after login to be able to generate the list of secret.
+
+Secret field is only decrypted when you try to access the secret (unshare modify the intermediate key so it needs to decrypt the secret to reencrypt it with the new intermediate key).
+
+In server saved mode every modification requests use challenge to prove user has rights to do the modification. It's a simple random token encrypted with claimed user public key.
 
 ## "API"
 ### User
-User object has username, publicKey, privateKey, keys, titles and token attributes.
+User object has username, publicKey, privateKey, keys, metadatas and token attributes.
 It takes username string as creation argument.
 * *generateMasterKey* generate new key pair and populate publicKey and privateKey.
   * it returns nothing

@@ -82,6 +82,24 @@ gulp.task('buildServ', function() {
 
   gulp.src('app/styles/**')
     .pipe(gulp.dest('server/client/styles'));
+
+  gulp.src('app/indexMigrate.html')
+    .pipe(build())
+    .pipe(gulp.dest('server/client'))
+
+  gulp.src(
+    [
+      'app/scripts/mainMigrate.js',
+      'app/scripts/User.js',
+      'app/scripts/Secret.js',
+      'app/scripts/APIServer.js',
+      'app/scripts/lib/**',
+      'app/scripts/ui.js',
+      'app/scripts/typeServer.js'
+    ]
+  )
+    .pipe(concat('mainMigrate.js'))
+    .pipe(gulp.dest('server/client/scripts'));
 });
 
 gulp.task('watch', function() {

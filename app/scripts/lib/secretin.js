@@ -121,12 +121,12 @@ function shareSecret(hashedTitle, friendName, rights){
   });
 }
 
-function unshareSecret(hashedTitle, friendName){
+function unshareSecret(hashedTitle, friendName, friendName2){ //friendName2 exists to help migration
   var friend;
   var encryptedSecret;
   var secret = {};
   var wrappedKeys = [];
-  return api.unshareSecret(currentUser, friendName, hashedTitle).then(function(){
+  return api.unshareSecret(currentUser, friendName, hashedTitle, friendName2).then(function(){
     return api.getSecret(hashedTitle, currentUser);
   }).then(function(eSecret){
     encryptedSecret = eSecret;
