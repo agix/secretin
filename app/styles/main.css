@@ -312,12 +312,12 @@ h2 {
   overflow: auto;
 }
 
-#secretTitle, #secretContent, #showSecretContent, #editSecretContent {
+#secretTitle, #secretContent, #folderContent, #showSecretContent, #editSecretContent {
     margin-bottom: 20px;
     border: solid 5px #4F628E;
 }
 
-#secretTitle:focus, #showSecretContent:focus, #editSecretContent:focus, #secretContent:focus {
+#secretTitle:focus, #showSecretContent:focus, #editSecretContent:focus, #secretContent:focus, #folderContent:focus {
     border: solid 5px #061539;
 }
 
@@ -333,13 +333,6 @@ h2 {
 
 #friendName:focus, #rights:focus{
     border: solid 5px #260339;
-}
-
-.secretContent {
-    margin-top:20px;
-    margin-bottom:20px;
-    width: 90%;
-    height: 100px;
 }
 
 .error{
@@ -425,6 +418,7 @@ h2 {
 .sharedUserElem span {
     font-size: 0.9em;
     font-family: monospace;
+    margin-right: 10px;
 }
 
 .secretElem span {

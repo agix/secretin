@@ -88,7 +88,7 @@ User.prototype.encryptTitle = function(title, publicKey){
 
 User.prototype.shareSecret = function(friend, wrappedKey, hashedTitle){
   var _this = this;
-  var result = {};
+  var result = {hashedTitle: hashedTitle};
   return _this.unwrapKey(wrappedKey).then(function(key){
     return _this.wrapKey(key, friend.publicKey);
   }).then(function(friendWrappedKey){
@@ -175,18 +175,18 @@ User.prototype.wrapKey = function(key, publicKey){
 
 User.prototype.decryptAllMetadatas = function(allMetadatas){
   var _this = this;
-  return new Promise(function(resolve, reject){
-    var hashedTitles = Object.keys(_this.keys);
-    hashedTitles.forEach(function(hashedTitle){
-      _this.metadatas = {};
+  var decryptMetadatasPromises = []
+  var hashedTitles = Object.keys(_this.keys);
+
+  hashedTitles.forEach(function(hashedTitle){
+    _this.metadatas = {};
+    decryptMetadatasPromises.push(
       _this.decryptSecret(allMetadatas[hashedTitle], _this.keys[hashedTitle].key).then(function(metadatas){
         _this.metadatas[hashedTitle] = JSON.parse(metadatas);
-        if(Object.keys(_this.metadatas).length === hashedTitles.length){
-          resolve();
-        }
-      });
-    });
+      })
+    )
   });
+  return Promise.all(decryptMetadatasPromises);
 }
 
 User.prototype.decryptTitles = function(){ //Should be removed after migration

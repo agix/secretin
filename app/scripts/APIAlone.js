@@ -84,6 +84,10 @@ API.prototype.deleteSecret = function(user, hashedTitle){
         }
         if(_this.db.secrets[hashedTitle].users.length === 0){
           delete _this.db.secrets[hashedTitle];
+          return true;
+        }
+        else{
+          return false;
         }
       }
       else{
@@ -117,10 +121,15 @@ API.prototype.editSecret = function(user, secretObject, hashedTitle){
   }).then(function(token){
     if(typeof _this.db.users[hashedUsername] !== 'undefined'){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
-        _this.db.secrets[hashedTitle].iv = secretObject.iv;
-        _this.db.secrets[hashedTitle].secret = secretObject.secret;
-        _this.db.secrets[hashedTitle].iv_meta = secretObject.iv_meta;
-        _this.db.secrets[hashedTitle].metadatas = secretObject.metadatas;
+        if(typeof _this.db.users[hashedUsername].keys[hashedTitle].rights !== 'undefined' && _this.db.users[hashedUsername].keys[hashedTitle].rights > 0){
+          _this.db.secrets[hashedTitle].iv = secretObject.iv;
+          _this.db.secrets[hashedTitle].secret = secretObject.secret;
+          _this.db.secrets[hashedTitle].iv_meta = secretObject.iv_meta;
+          _this.db.secrets[hashedTitle].metadatas = secretObject.metadatas;
+        }
+        else{
+          throw('You can\'t edit this secret');
+        }
       }
       else{
         throw('Secret not found');
@@ -141,17 +150,22 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
   }).then(function(token){
     if(typeof _this.db.users[hashedUsername] !== 'undefined'){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
-        _this.db.secrets[hashedTitle].iv = secret.iv;
-        _this.db.secrets[hashedTitle].secret = secret.secret;
-        _this.db.secrets[hashedTitle].iv_meta = secret.iv_meta;
-        _this.db.secrets[hashedTitle].metadatas = secret.metadatas;
-        wrappedKeys.forEach(function(wrappedKey){
-          if(typeof _this.db.users[wrappedKey.user] !== 'undefined'){
-            if(typeof _this.db.users[wrappedKey.user].keys[hashedTitle] !== 'undefined'){
-              _this.db.users[wrappedKey.user].keys[hashedTitle].key = wrappedKey.key;
+        if(typeof _this.db.users[hashedUsername].keys[hashedTitle].rights !== 'undefined' && _this.db.users[hashedUsername].keys[hashedTitle].rights > 1){
+          _this.db.secrets[hashedTitle].iv = secret.iv;
+          _this.db.secrets[hashedTitle].secret = secret.secret;
+          _this.db.secrets[hashedTitle].iv_meta = secret.iv_meta;
+          _this.db.secrets[hashedTitle].metadatas = secret.metadatas;
+          wrappedKeys.forEach(function(wrappedKey){
+            if(typeof _this.db.users[wrappedKey.user] !== 'undefined'){
+              if(typeof _this.db.users[wrappedKey.user].keys[hashedTitle] !== 'undefined'){
+                _this.db.users[wrappedKey.user].keys[hashedTitle].key = wrappedKey.key;
+              }
             }
-          }
-        });
+          });
+        }
+        else{
+          throw('You can\'t generate new key for this secret');
+        }
       }
       else{
         throw('Secret not found');
@@ -163,6 +177,52 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
   });
 };
 
+API.prototype.removeSecretFromFolder = function(user, hashedFolder, usersToDelete, hashedTitle){
+  var _this = this;
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    var userHashPromises = [];
+    usersToDelete.forEach(function(username){
+      userHashPromises.push(SHA256(username));
+    });
+    return Promise.all(userHashPromises);
+  }).then(function(userHashes){
+    if(typeof _this.db.users[hashedUsername] !== 'undefined'){
+      if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
+        if(typeof _this.db.secrets[hashedFolder] !== 'undefined'){
+          if(typeof _this.db.users[hashedUsername].keys[hashedTitle].rights !== 'undefined' &&
+            _this.db.users[hashedUsername].keys[hashedTitle].rights > 1 &&
+            typeof _this.db.users[hashedUsername].keys[hashedFolder].rights !== 'undefined' &&
+            _this.db.users[hashedUsername].keys[hashedFolder].rights > 0){
+              userHashes.forEach(function(rHashedFriendUsername){
+                var hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
+                if(hashedFriendUsername !== hashedUsername && typeof _this.db.users[hashedFriendUsername] !== 'undefined' && typeof _this.db.users[hashedFriendUsername].keys[hashedTitle] !== 'undefined'){
+                  delete _this.db.users[hashedFriendUsername].keys[hashedTitle];
+                  var id = _this.db.secrets[hashedTitle].users.indexOf(hashedFriendUsername);
+                  _this.db.secrets[hashedTitle].users.splice(id, 1);
+                }
+              });
+          }
+          else{
+            throw('You can\'t remove from this folder');
+          }
+        }
+        else{
+          throw('Folder not found');
+        }
+      }
+      else{
+        throw('Secret not found');
+      }
+    }
+    else{
+      throw('User not found');
+    }
+  });
+};
 
 API.prototype.unshareSecret = function(user, friendName, hashedTitle){
   var _this = this;
@@ -178,18 +238,23 @@ API.prototype.unshareSecret = function(user, friendName, hashedTitle){
     if(hashedUsername !== hashedFriendUsername){
       if(typeof _this.db.users[hashedUsername] !== 'undefined'){
         if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
-          if(typeof _this.db.users[hashedFriendUsername] !== 'undefined'){
-            if(typeof _this.db.users[hashedFriendUsername].keys[hashedTitle] !== 'undefined'){
-              delete _this.db.users[hashedFriendUsername].keys[hashedTitle];
-              var id = _this.db.secrets[hashedTitle].users.indexOf(hashedFriendUsername);
-              _this.db.secrets[hashedTitle].users.splice(id, 1);
+          if(typeof _this.db.users[hashedUsername].keys[hashedTitle].rights !== 'undefined' && _this.db.users[hashedUsername].keys[hashedTitle].rights > 1){
+            if(typeof _this.db.users[hashedFriendUsername] !== 'undefined'){
+              if(typeof _this.db.users[hashedFriendUsername].keys[hashedTitle] !== 'undefined'){
+                delete _this.db.users[hashedFriendUsername].keys[hashedTitle];
+                var id = _this.db.secrets[hashedTitle].users.indexOf(hashedFriendUsername);
+                _this.db.secrets[hashedTitle].users.splice(id, 1);
+              }
+              else{
+                throw('You didn\'t share this secret with this friend');
+              }
             }
             else{
-              throw('You didn\'t share this secret with this friend');
+              throw('Friend not found');
             }
           }
           else{
-            throw('Friend not found');
+            throw('You can\'t unshare this secret');
           }
         }
         else{
@@ -206,7 +271,7 @@ API.prototype.unshareSecret = function(user, friendName, hashedTitle){
   });
 };
 
-API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, rights){
+API.prototype.addSecretToFolder = function(user, sharedSecretObjects, hashedTitle, hashedFolder){
   var _this = this;
   var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
@@ -215,17 +280,38 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
   }).then(function(token){
     if(typeof _this.db.users[hashedUsername] !== 'undefined'){
       if(typeof _this.db.secrets[hashedTitle] !== 'undefined'){
-        if(typeof _this.db.users[sharedSecretObject.friendName] !== 'undefined'){
-          _this.db.users[sharedSecretObject.friendName].keys[hashedTitle] = {
-            key: sharedSecretObject.wrappedKey,
-            rights: rights
-          };
-          if(_this.db.secrets[hashedTitle].users.indexOf(sharedSecretObject.friendName) < 0){
-            _this.db.secrets[hashedTitle].users.push(sharedSecretObject.friendName);
+        if(typeof _this.db.users[hashedUsername].keys[hashedTitle].rights !== 'undefined' && _this.db.users[hashedUsername].keys[hashedTitle].rights > 1){
+          if(typeof _this.db.secrets[hashedFolder] !== 'undefined'){
+            if(_this.db.users[hashedUsername].keys[hashedFolder].rights !== 0){
+              var errs = 0;
+              sharedSecretObjects.forEach(function(sharedSecretObject){
+                if(typeof _this.db.users[sharedSecretObject.friendName] !== 'undefined'){
+                  _this.db.users[sharedSecretObject.friendName].keys[hashedTitle] = {
+                    key: sharedSecretObject.wrappedKey,
+                    rights: sharedSecretObject.rights
+                  };
+                  if(_this.db.secrets[hashedTitle].users.indexOf(sharedSecretObject.friendName) < 0){
+                    _this.db.secrets[hashedTitle].users.push(sharedSecretObject.friendName);
+                  }
+                }
+                else{
+                  errs += 1;
+                }
+              });
+              if(errs > 0){
+                throw('Something goes wrong');
+              }
+            }
+            else{
+              throw('You can\'t add anything in this folder');
+            }
+          }
+          else{
+            throw('Folder not found');
           }
         }
         else{
-          throw('Friend not found');
+          throw('You can\'t share this secret');
         }
       }
       else{
@@ -235,6 +321,83 @@ API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, righ
     else{
       throw('User not found');
     }
+  });
+}
+
+API.prototype.privShareSecret = function(hashedUsername, sharedSecretObject){
+  var _this = this;
+  if(typeof _this.db.users[hashedUsername] !== 'undefined'){
+    if(typeof _this.db.secrets[sharedSecretObject.hashedTitle] !== 'undefined'){
+      if(typeof _this.db.users[hashedUsername].keys[sharedSecretObject.hashedTitle].rights !== 'undefined' && _this.db.users[hashedUsername].keys[sharedSecretObject.hashedTitle].rights > 1){
+        if(typeof _this.db.users[sharedSecretObject.friendName] !== 'undefined'){
+          _this.db.users[sharedSecretObject.friendName].keys[sharedSecretObject.hashedTitle] = {
+            key: sharedSecretObject.wrappedKey,
+            rights: sharedSecretObject.rights
+          };
+          if(_this.db.secrets[sharedSecretObject.hashedTitle].users.indexOf(sharedSecretObject.friendName) < 0){
+            _this.db.secrets[sharedSecretObject.hashedTitle].users.push(sharedSecretObject.friendName);
+          }
+        }
+        else{
+          throw('Friend not found');
+        }
+      }
+      else{
+        throw('You can\'t share this secret');
+      }
+    }
+    else{
+      throw('Secret not found');
+    }
+  }
+  else{
+    throw('User not found');
+  }
+}
+
+API.prototype.shareMultipleSecrets = function(user, sharedSecretObjects){
+  var _this = this;
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    var errors = []
+    sharedSecretObjects.forEach(function(sharedSecretObject){
+      if(sharedSecretObject.friendName !== hashedUsername){
+        try{
+          _this.privShareSecret(hashedUsername, sharedSecretObject);
+        }
+        catch (e) {
+          errors.push(e);
+        }
+      }
+    });
+    if(errors.length > 0){
+      throw(errors);
+    }
+  });
+}
+
+API.prototype.shareSecret = function(user, sharedSecretObject){
+  var _this = this;
+  var hashedUsername;
+  return SHA256(user.username).then(function(rHashedUsername){
+    hashedUsername = bytesToHexString(rHashedUsername);
+    return user.getToken(_this);
+  }).then(function(token){
+    if(sharedSecretObject.friendName !== hashedUsername){
+      try{
+        _this.privShareSecret(hashedUsername, sharedSecretObject);
+      }
+      catch (e) {
+        throw(e);
+      }
+    }
+    else{
+      throw('You can\'t share with youself');
+    }
+
   });
 };
 

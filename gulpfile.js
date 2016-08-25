@@ -22,8 +22,8 @@ gulp.task('buildLocal', function() {
       'app/scripts/User.js',
       'app/scripts/Secret.js',
       'app/scripts/APIAlone.js',
+      'app/scripts/Secretin.js',
       'app/scripts/lib/**',
-      'app/scripts/ui.js',
       'app/scripts/typeAlone.js'
     ]
   )
@@ -49,6 +49,7 @@ gulp.task('buildElectron', function() {
       'app/scripts/mainElectron.js',
       'app/scripts/User.js',
       'app/scripts/APIAlone.js',
+      'app/scripts/Secretin.js',
       'app/scripts/lib/**',
       'app/scripts/typeElectron.js'
     ]
@@ -72,8 +73,8 @@ gulp.task('buildServ', function() {
       'app/scripts/User.js',
       'app/scripts/Secret.js',
       'app/scripts/APIServer.js',
+      'app/scripts/Secretin.js',
       'app/scripts/lib/**',
-      'app/scripts/ui.js',
       'app/scripts/typeServer.js'
     ]
   )
@@ -93,8 +94,8 @@ gulp.task('buildServ', function() {
       'app/scripts/User.js',
       'app/scripts/Secret.js',
       'app/scripts/APIServer.js',
+      'app/scripts/Secretin.js',
       'app/scripts/lib/**',
-      'app/scripts/ui.js',
       'app/scripts/typeServer.js'
     ]
   )
@@ -121,8 +122,8 @@ gulp.task('jshint', function() {
       'app/scripts/Secret.js',
       'app/scripts/APIServer.js',
       'app/scripts/APIAlone.js',
+      'app/scripts/Secretin.js',
       'app/scripts/lib/**',
-      'app/scripts/ui.js',
       'app/scripts/typeServer.js',
       'app/scripts/typeAlone.js',
       'app/scripts/typeElectron.js'

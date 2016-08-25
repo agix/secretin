@@ -118,17 +118,17 @@ API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFrie
   });
 };
 
-API.prototype.shareSecret = function(user, sharedSecretObject, hashedTitle, rights){
+API.prototype.shareSecret = function(user, sharedSecretObject){
   var _this = this;
   var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
   }).then(function(token){
-    return POST(_this.db+'/share/'+hashedUsername+'/'+hashedTitle,{
+    return POST(_this.db+'/share/'+hashedUsername+'/'+sharedSecretObject.hashedTitle,{
       friendName: sharedSecretObject.friendName,
       key: sharedSecretObject.wrappedKey,
-      rights: rights,
+      rights: sharedSecretObject.rights,
       token: bytesToHexString(token)
     });
   });

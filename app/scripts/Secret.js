@@ -1,4 +1,4 @@
-var Secret = function(rawContent) {
+var Secret = function(type, rawContent) {
   this.parent = false;
   this.editable = true;
   this.fields = [];

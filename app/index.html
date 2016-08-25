@@ -26,12 +26,6 @@
   <div id="content">
   <a id="getDb" href="#database" class="btn" type="button">DB</a>
 
-  <div style="display:none">
-    <h2>Database</h2>
-    <p>Let blank if you want to use www.secret-in.me database.</p>
-    <input type="text" id="dbUri">
-  </div>
-
   <div class="widget">
     <ol class="widget-list" id="createUser">
       <div>
@@ -69,6 +63,7 @@
         <span id="secrets" style="display:none">
           <h2 id="userTitle">Not connected</h2>
           <a id="addSecretPopup" class="btn2" href="#secretPopup">Add secret</a>
+          <a id="createFolder" class="btn2" href="#folderPopup">Create folder</a>
           <a id="changePasswordA" class="btn2" href="#changePassword">Change password</a>
           <input type="button" class="btn2" id="deco" value="Disconnect"/>
           <span class="separator"></span>
@@ -98,6 +93,15 @@
       </div>
     </div>
 
+    <div id="folderPopup" class="overlay">
+      <div class="popup">
+        <h2 id="folderPopupTitle"></h2>
+        <div id="folderContent">
+        </div>
+        <div id="folderPopupBottom"></div>
+      </div>
+    </div>
+
     <div id="showSecret" class="overlay">
       <div class="popup">
         <h2 id="showSecretTitle"></h2>
@@ -115,6 +119,10 @@
         <a class="close" id="closeShareSecret">×</a>
         <div class="content">
           <input type="hidden" id="shareSecretHash" />
+          <span id="radioType">
+            User : <input type="radio" name="type" value="user" checked>
+            Folder : <input type="radio" name="type" value="folder"><br />
+          </span>
           <input type="text" id="friendName" placeholder="Friend name"/>
           <select id="rights">
             <option value="0">Read</option>

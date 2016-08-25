@@ -6,16 +6,18 @@ document.getElementById('newUser').addEventListener('click', function(e) {
   var password = document.getElementById('newPassword').value;
   btn.disabled = true;
   btn.value = 'Please wait...';
-  newUser(username, password).then(function(msg){
+  secretin.newUser(username, password).then(function(msg){
     document.location.href = '#keys';
     btn.disabled = false;
     btn.value = 'Generate';
     document.getElementById('newUsername').value = '';
     document.getElementById('newPassword').value = '';
-    document.getElementById('userTitle').textContent = currentUser.username+'\'s secrets';
+    document.getElementById('userTitle').textContent = secretin.currentUser.username+'\'s secrets';
     document.getElementById('secrets').style.display = '';
     document.getElementById('login').style.display = 'none';
     document.getElementById('deco').style.display = '';
+    return secretin.getAllMetadatas();
+  }).then(function(){
     getSecretList();
   }, function(err){
     btn.disabled = false;
@@ -34,15 +36,17 @@ document.getElementById('getKeys').addEventListener('click', function(e){
   var hash;
   btn.disabled = true;
   btn.value = 'Please wait...';
-  getKeys(username, password).then(function(){
+  secretin.getKeys(username, password).then(function(){
     btn.disabled = false;
     btn.value = 'Get keys';
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
-    document.getElementById('userTitle').textContent = currentUser.username+'\'s secrets';
+    document.getElementById('userTitle').textContent = secretin.currentUser.username+'\'s secrets';
     document.getElementById('secrets').style.display = '';
     document.getElementById('login').style.display = 'none';
     document.getElementById('deco').style.display = '';
+    return secretin.getAllMetadatas();
+  }).then(function(){
     getSecretList();
   }, function(err){
     btn.disabled = false;
@@ -52,8 +56,55 @@ document.getElementById('getKeys').addEventListener('click', function(e){
   });
 });
 
+
+document.getElementById('createFolder').addEventListener('click', function(e){
+  document.getElementById('folderPopupTitle').textContent = 'New folder';
+  var folderContent = document.getElementById('folderContent');
+
+  var title = document.createElement('input');
+  title.type = 'text';
+  title.placeholder = 'Folder title';
+
+  folderContent.appendChild(title);
+
+  var createFolderBtn = document.createElement('input');
+  createFolderBtn.type = 'button';
+  createFolderBtn.classList.add('btn3');
+  createFolderBtn.value = 'New folder';
+  createFolderBtn.addEventListener('click', function(e){
+    var metadatas = {title: title.value, type: 'folder'};
+    secretin.addSecret(metadatas, {}).then(function(){
+      cleanElement(folderContent);
+      document.getElementById('folderPopupTitle').value = '';
+      document.location.href = '#keys';
+      return secretin.getAllMetadatas();
+    }).then(function(){
+      getSecretList();
+    }, function(err){
+      alert(err);
+      throw(err);
+    });
+
+  });
+
+  cleanElement(document.getElementById('folderPopupBottom'));
+  document.getElementById('folderPopupBottom').appendChild(createFolderBtn);
+
+  var popupClose = document.createElement('a');
+  popupClose.classList.add('close');
+  popupClose.textContent = '×';
+  popupClose.addEventListener('click', function(e){
+    cleanElement(folderContent);
+    document.getElementById('folderPopupTitle').value = '';
+    document.location.href = '#keys';
+  });
+
+  var folderPopup = document.getElementById('folderPopup').querySelector('.popup');
+  folderPopup.insertBefore(popupClose, folderContent);
+});
+
 document.getElementById('addSecretPopup').addEventListener('click', function(e){
-  var secret = new Secret();
+  var secret = new Secret('secret');
 
   document.getElementById('popupTitle').textContent = 'Add secret';
   var secretContent = document.getElementById('secretContent');
@@ -68,11 +119,13 @@ document.getElementById('addSecretPopup').addEventListener('click', function(e){
   addSecretBtn.value = 'Add Secret';
   addSecretBtn.addEventListener('click', function(e){
     var metadatas = {title: title.value};
-    addSecret(metadatas, secret).then(function(){
+    secretin.addSecret(metadatas, secret).then(function(){
       secret.destroy();
       cleanElement(secretContent);
       document.getElementById('popupTitle').value = '';
       document.location.href = '#keys';
+      return secretin.getAllMetadatas();
+    }).then(function(){
       getSecretList();
     }, function(err){
       alert(err);
@@ -105,10 +158,10 @@ document.getElementById('addSecretPopup').addEventListener('click', function(e){
 function showSecretPopup(e){
 
   var hashedTitle  = e.path[1].children[0].textContent;
-  var metadatas = currentUser.metadatas[hashedTitle];
+  var metadatas = secretin.currentUser.metadatas[hashedTitle];
 
-  getSecret(hashedTitle).then(function(secretDatas){
-    var secret = new Secret(secretDatas);
+  secretin.getSecret(hashedTitle).then(function(secretDatas){
+    var secret = new Secret('secret', secretDatas);
     var secretContent = document.getElementById('secretContent');
     document.getElementById('popupTitle').textContent = metadatas.title;
     secret.draw(secretContent);
@@ -124,7 +177,7 @@ function showSecretPopup(e){
         secret.redraw();
       }
       else{
-        editSecret(hashedTitle, metadatas, secret).then(function(){
+        secretin.editSecret(hashedTitle, metadatas, secret).then(function(){
           secret.editable = false;
           secret.redraw();
           e.target.value = 'Edit Secret';
@@ -136,7 +189,7 @@ function showSecretPopup(e){
     });
 
     cleanElement(document.getElementById('popupBottom'));
-    if(currentUser.keys[hashedTitle].rights > 0){
+    if(secretin.currentUser.keys[hashedTitle].rights > 0){
       document.getElementById('popupBottom').appendChild(editSecretBtn);
     }
 
@@ -169,7 +222,7 @@ document.getElementById('changePasswordBtn').addEventListener('click', function(
   var pass = {};
   btn.disabled = true;
   btn.value = 'Please wait...';
-  changePassword(password).then(function(msg){
+  secretin.changePassword(password).then(function(msg){
     btn.disabled = false;
     btn.value = 'Change password';
     document.getElementById('changePasswordInput').value = '';
@@ -189,12 +242,12 @@ window.addEventListener('focus', function() {
 });
 
 window.addEventListener('blur', function() {
-  timeout = setTimeout(function() { destroyUser(currentUser); currentUser = {}; }, 60000);
+  timeout = setTimeout(function() { destroyUser(secretin.currentUser); secretin.currentUser = {}; }, 60000);
 });
 
 document.getElementById('deco').addEventListener('click', function(e){
-  destroyUser(currentUser);
-  currentUser = {};
+  destroyUser(secretin.currentUser);
+  secretin.currentUser = {};
 });
 
 document.getElementById('closeShareSecret').addEventListener('click', function(e){
@@ -210,14 +263,19 @@ document.getElementById('closeShareSecret').addEventListener('click', function(e
 document.getElementById('share').addEventListener('click', function(e){
   var hashedTitle = document.getElementById('shareSecretHash').value;
   var friendName = document.getElementById('friendName').value;
-  var rights = document.getElementById('rights').value;
+  var rights = parseInt(document.getElementById('rights').value);
+  var type = document.querySelector('input[name="type"]:checked').value;
+
   e.target.disabled = true;
   e.target.value = 'Please wait...';
-  shareSecret(hashedTitle, friendName, rights).then(function(users){
+  secretin.shareSecret(type, hashedTitle, friendName, rights).then(function(users){
+    return secretin.getAllMetadatas();
+  }).then(function(){
+    getSecretList();
     e.target.disabled = false;
     e.target.value = 'Share';
     document.getElementById('friendName').value = '';
-    share(false, hashedTitle, document.getElementById('shareSecretTitle').textContent);
+    share(false, hashedTitle);
   }, function(err){
     e.target.disabled = false;
     e.target.value = 'Share';
@@ -233,10 +291,13 @@ function unshare(e){
   var friendName = e.path[1].children[0].textContent;
   e.target.disabled = true;
   e.target.value = 'Please wait...';
-  unshareSecret(hashedTitle, friendName).then(function(){
-    return refreshKeys();
+  secretin.unshareSecret(hashedTitle, friendName).then(function(){
+    return secretin.refreshKeys();
   }).then(function(){
-    share(false, hashedTitle, document.getElementById('shareSecretTitle').textContent);
+    return secretin.getAllMetadatas();
+  }).then(function(){
+    getSecretList();
+    share(false, hashedTitle);
   }, function(err){
     e.target.disabled = false;
     e.target.value = 'Unshare';
@@ -246,9 +307,30 @@ function unshare(e){
 
 }
 
+function removeFromFolder(e, hashedFolder){
+  var hashedTitle = document.getElementById('shareSecretHash').value;
+  e.target.disabled = true;
+  e.target.value = 'Please wait...';
+  secretin.removeSecretFromFolder(hashedTitle, hashedFolder).then(function(){
+    return secretin.refreshKeys();
+  }).then(function(){
+    return secretin.getAllMetadatas();
+  }).then(function(){
+    getSecretList();
+    share(false, hashedTitle);
+  }, function(err){
+    e.target.disabled = false;
+    e.target.value = 'Unshare';
+    error(document.getElementById('errorShareSecret'), err);
+    throw(err);
+  });
+}
+
 document.getElementById('refresh').addEventListener('click', function(e){
   document.getElementById('search').value = '';
-  refreshKeys().then(function(){
+  secretin.refreshKeys().then(function(){
+    return secretin.getAllMetadatas();
+  }).then(function(){
     getSecretList();
   }, function(err){
     alert(err);
@@ -261,9 +343,16 @@ document.getElementById('changePasswordA').addEventListener('click', function(e)
 });
 
 document.getElementById('search').addEventListener('keyup', function(e){
+  var str = e.target.value.toLowerCase();
+  if(str.length > 2){
+    getSecretList(true);
+  }
+  else{
+    getSecretList();
+  }
   var elems = document.querySelectorAll('.secretElem');
   for (var i = 0; i < elems.length; i++) {
-    if(e.target.value.length > 2 && elems[i].children[1].textContent.toLowerCase().indexOf(e.target.value.toLowerCase()) === -1){
+    if(str.length > 2 && elems[i].children[1].textContent.toLowerCase().indexOf(str) === -1){
       elems[i].style.display = 'none';
     }
     else{
@@ -272,9 +361,10 @@ document.getElementById('search').addEventListener('keyup', function(e){
   }
 });
 
+
 document.getElementById('getDb').addEventListener('click', function(e) {
-  if(typeof currentUser !== 'undefined' && typeof currentUser.username !== 'undefined'){
-    api.getDb(currentUser.username, currentUser.hash).then(function(db){
+  if(typeof secretin.currentUser !== 'undefined' && typeof secretin.currentUser.username !== 'undefined'){
+    secretin.api.getDb(secretin.currentUser.username, secretin.currentUser.hash).then(function(db){
       document.getElementById('db').value = JSON.stringify(db);
     });
   }
@@ -334,7 +424,9 @@ function uiDeleteSecret(e){
   var hashedTitle = e.path[1].children[0].textContent;
   var sure = confirm('Are you sure to delete ' + title + '?');
   if(sure){
-    deleteSecret(hashedTitle).then(function(){
+    secretin.deleteSecret(hashedTitle).then(function(){
+      return secretin.getAllMetadatas();
+    }).then(function(){
       getSecretList();
     }, function(err){
       alert(err);
@@ -343,15 +435,19 @@ function uiDeleteSecret(e){
   }
 }
 
-function share(e, hashedTitle, title){
-  if(typeof(hashedTitle) === 'undefined'){
-    hashedTitle = e.path[1].children[0].textContent;
-  }
-  if(typeof(title) === 'undefined'){
-    title  = e.path[1].children[1].textContent;
-  }
+function share(e, hashedTitle){
+  var metadatas = secretin.currentUser.metadatas[hashedTitle];
+
   document.getElementById('shareSecretHash').value = hashedTitle;
-  document.getElementById('shareSecretTitle').textContent = title;
+  if(metadatas.type === 'folder'){
+    document.getElementById('shareSecretTitle').textContent = 'Folder '+metadatas.title;
+    document.getElementById('radioType').style.display = 'none';
+  }
+  else{
+    document.getElementById('shareSecretTitle').textContent = metadatas.title;
+    document.getElementById('radioType').style.display = '';
+  }
+
   document.location.hash = '#shareSecret';
 
 
@@ -359,23 +455,176 @@ function share(e, hashedTitle, title){
   while (sharedUsersList.firstChild) {
     sharedUsersList.removeChild(sharedUsersList.firstChild);
   }
-  Object.keys(currentUser.metadatas[hashedTitle].users).forEach(function(user){
-    sharedUsersList.appendChild(uiSharedUsers(user));
+  Object.keys(secretin.currentUser.metadatas[hashedTitle].users).forEach(function(user){
+    if(secretin.currentUser.username !== user){
+      sharedUsersList.appendChild(uiSharedUsers(user, secretin.currentUser.metadatas[hashedTitle].users[user]));
+    }
+  });
+  Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).forEach(function(folder){
+    sharedUsersList.appendChild(uiSharedFolder(secretin.currentUser.metadatas[hashedTitle].folders[folder].name));
   });
 }
 
-function getSecretList(){
+function getSecretList(all){
   var secretsList = document.getElementById('secretsList');
   var oldElems = secretsList.querySelectorAll('.secretElem');
 
   for (var i = 0; i < oldElems.length; i++) {
     secretsList.removeChild(oldElems[i]);
   }
-  getAllMetadatas().then(function(){
-    Object.keys(currentUser.metadatas).forEach(function(hashedTitle){
-      secretsList.appendChild(uiSecretList(hashedTitle, currentUser.metadatas[hashedTitle].title));
-    });
+
+  if(typeof(secretin.currentUser.currentFolder) !== 'undefined'){
+    var elem = document.createElement('li');
+    elem.classList.add('secretElem');
+    var btn = document.createElement('input');
+    btn.type = 'button';
+    btn.value = 'Return';
+    btn.addEventListener('click', function(e){ delete secretin.currentUser.currentFolder; getSecretList(); });
+    elem.appendChild(btn);
+    secretsList.appendChild(elem);
+  }
+
+  Object.keys(secretin.currentUser.metadatas).forEach(function(hashedTitle){
+    if(typeof(secretin.currentUser.currentFolder) === 'undefined' || typeof(secretin.currentUser.metadatas[hashedTitle].folders[secretin.currentUser.currentFolder]) !== 'undefined' || all){
+      var dontKnowFolder = true;
+      Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
+        if(typeof(secretin.currentUser.metadatas[hashedFolder]) !== 'undefined' && secretin.currentUser.currentFolder !== hashedFolder){
+          dontKnowFolder = false;
+        }
+      });
+      if(dontKnowFolder || all){
+        secretsList.appendChild(uiSecretList(hashedTitle, secretin.currentUser.metadatas[hashedTitle]));
+      }
+    }
   });
   document.getElementById('search').focus();
 }
 
+function uiSharedUsers(username, metadatas){
+  var elem = document.createElement('li');
+  elem.classList.add('sharedUserElem');
+
+  var userSpan = document.createElement('span');
+  userSpan.textContent = username;
+
+  var userRightsSpan = document.createElement('span');
+  if(metadatas.rights === 0){
+    userRightsSpan.textContent = 'Read';
+  }
+  else if(metadatas.rights === 1){
+    userRightsSpan.textContent = 'Read/Write';
+  }
+  else{
+    userRightsSpan.textContent = 'Read/Write/Share';
+  }
+
+  var unshareBtn = document.createElement('input');
+  unshareBtn.type = 'button';
+  unshareBtn.value = 'Unshare';
+  unshareBtn.addEventListener('click', unshare);
+
+  elem.appendChild(userSpan);
+  elem.appendChild(userRightsSpan);
+
+  if(typeof(metadatas.folder) !== 'undefined'){
+    var folderSpan = document.createElement('span');
+    folderSpan.textContent = 'via '+metadatas.folder;
+    elem.appendChild(folderSpan);
+  }
+  else{
+    userSpan.style.cursor = 'pointer';
+    userSpan.addEventListener('click', function(e){
+      document.getElementById('friendName').value = username;
+      document.getElementById('rights').selectedIndex = metadatas.rights;
+    });
+    elem.appendChild(unshareBtn);
+  }
+
+  return elem;
+}
+
+function uiSharedFolder(folderName){
+  var hashedFolder;
+  Object.keys(secretin.currentUser.metadatas).forEach(function(hashedTitle){
+    if(secretin.currentUser.metadatas[hashedTitle].title === folderName){
+      hashedFolder = hashedTitle;
+    }
+  });
+
+  var elem = document.createElement('li');
+  elem.classList.add('sharedUserElem');
+
+  var folderSpan = document.createElement('span');
+  folderSpan.textContent = 'Folder '+folderName;
+
+  elem.appendChild(folderSpan);
+  if(typeof hashedFolder !== 'undefined'){
+    var unshareBtn = document.createElement('input');
+    unshareBtn.type = 'button';
+    unshareBtn.value = 'Unshare';
+    unshareBtn.addEventListener('click', function(e){ removeFromFolder(e, hashedFolder); });
+    elem.appendChild(unshareBtn);
+  }
+
+  return elem;
+}
+
+function uiSecretList(hashedTitle, metadatas){
+  var elem = document.createElement('li');
+  elem.classList.add('secretElem');
+
+  var btn = document.createElement('input');
+  btn.type = 'button';
+  if(metadatas.type !== 'folder'){
+    btn.value = 'Show';
+    btn.addEventListener('click', showSecretPopup);
+  }
+  else{
+    btn.value = 'Open';
+    btn.addEventListener('click', function(e){ secretin.currentUser.currentFolder = hashedTitle; getSecretList(); });
+  }
+
+
+  var shareBtn = document.createElement('input');
+  shareBtn.type = 'button';
+  shareBtn.value = 'Share';
+
+  shareBtn.addEventListener('click', function(e){ share(e, hashedTitle); });
+
+  var deleteBtn = document.createElement('input');
+  deleteBtn.type = 'button';
+  if(metadatas.type === 'folder'){
+    deleteBtn.value = 'Leave';
+  }
+  else{
+    deleteBtn.value = 'Delete';
+  }
+  deleteBtn.addEventListener('click', uiDeleteSecret);
+
+  var titleSpan = document.createElement('span');
+  if(metadatas.type === 'folder'){
+    titleSpan.textContent = 'Folder '+metadatas.title;
+  }
+  else{
+    titleSpan.textContent = metadatas.title;
+  }
+
+  var br = document.createElement('br');
+
+  var hashSpan = document.createElement('span');
+  hashSpan.textContent = hashedTitle;
+  hashSpan.style.display = 'none';
+
+  elem.appendChild(hashSpan);
+  elem.appendChild(titleSpan);
+  elem.appendChild(br);
+  elem.appendChild(btn);
+
+
+  if(secretin.currentUser.keys[hashedTitle].rights > 1){
+    elem.appendChild(shareBtn);
+  }
+  elem.appendChild(deleteBtn);
+
+  return elem;
+}
