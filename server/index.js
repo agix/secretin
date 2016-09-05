@@ -355,54 +355,63 @@ app.post('/user/:name/:title', function (req, res) {
 app.delete('/user/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
-      userExists(req.params.name, function(uExists, user, metaUser){
-        if(uExists){
+      userExists(req.params.name, function(cuExists, currentUser){
+        if(cuExists){
           secretExists(req.params.title, function(sExists, secret, metaSecret){
             if(sExists){
-              var secretDoc = {secret: {}};
-              secretDoc.secret[req.params.title] = secret;
-              _.remove(secretDoc.secret[req.params.title].users, function(currentUser) {
-                return (currentUser === req.params.name);
-              });
-
-              var userDoc = {user: {}};
-              userDoc.user[req.params.name] = user;
-              delete userDoc.user[req.params.name].keys[req.params.title];
-              db.save(metaUser.id, metaUser.rev, userDoc, function (err, ret) {
-                if(err === null && ret.ok === true){
-                  if(secretDoc.secret[req.params.title].users.length === 0){
-                    db.remove(metaSecret.id, metaSecret.rev, function(err, ret){
-                      if(err === null && ret.ok === true){
-                        res.writeHead(200, 'Secret deleted', {'Content-Type': 'application/json; charset=utf-8'});
-                        res.end(JSON.stringify(true));
-                      }
-                      else{
-                        console.log(err)
-                        res.writeHead(500, 'Unknown error', {});
-                        res.end();
-                      }
-                    });
-                  }
-                  else{
-                    db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
-                      if(err === null && ret.ok === true){
-                        res.writeHead(200, 'Secret deleted', {});
-                        res.end();
-                      }
-                      else{
-                        console.log(err)
-                        res.writeHead(500, 'Unknown error', {});
-                        res.end();
-                      }
-                    });
-                  }
-                }
-                else{
-                  console.log(err)
-                  res.writeHead(500, 'Unknown error', {});
-                  res.end();
-                }
-              });
+              if(typeof currentUser.keys[req.params.title].rights !== 'undefined' && currentUser.keys[req.params.title].rights > 1){
+                var Users = {};
+                var done = 0;
+                secret.users.forEach(function(username){
+                  userExists(username, function(uExists, user, metaUser){
+                    done += 1;
+                    if(uExists){
+                      var userDoc = {user: {}};
+                      userDoc.user[username] = user;
+                      delete userDoc.user[username].keys[req.params.title];
+                      Users[metaUser.id] = {rev: metaUser.rev, doc: userDoc};
+                    }
+                    if(done === secret.users.length){
+                      var nbUsers = 0;
+                      var errors = [];
+                      Object.keys(Users).forEach(function(id){
+                        db.save(id, Users[id].rev, Users[id].doc, function (err, ret) {
+                          nbUsers += 1;
+                          if(err !== null || ret.ok !== true){
+                            console.log(JSON.stringify(Users[id]));
+                            console.log(err)
+                            errors.push('Unknown error');
+                          }
+                          if(nbUsers === Object.keys(Users).length){
+                            if(errors.length === 0){
+                              db.remove(metaSecret.id, metaSecret.rev, function(err, ret){
+                                if(err === null && ret.ok === true){
+                                  res.writeHead(200, 'Secret deleted');
+                                  res.end();
+                                }
+                                else{
+                                  console.log(JSON.stringify(metaSecret));
+                                  console.log(err)
+                                  res.writeHead(500, 'Unknown error', {});
+                                  res.end();
+                                }
+                              });
+                            }
+                            else{
+                              res.writeHead(500, errors.join('\n'), {});
+                              res.end();
+                            }
+                          }
+                        });
+                      });
+                    }
+                  });
+                });
+              }
+              else{
+                res.writeHead(403, 'You can\'t delete this secret', {});
+                res.end();
+              }
             }
             else{
               res.writeHead(404, 'Secret not found', {});

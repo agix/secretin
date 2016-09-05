@@ -78,7 +78,13 @@ Secretin.prototype.addSecret = function(metadatas, content){
   return new Promise(function(resolve, reject){
     metadatas.users = {};
     metadatas.folders = {};
-    metadatas.users[_this.currentUser.username] = {rights: 2};
+    if(typeof(_this.currentUser.currentFolder) !== 'undefined'){
+      metadatas.users[_this.currentUser.username] = {rights: _this.currentUser.keys[_this.currentUser.currentFolder].rights};
+    }
+    else{
+      metadatas.users[_this.currentUser.username] = {rights: 2};
+    }
+
     if(typeof(_this.currentUser.username) === 'string'){
       return _this.currentUser.createSecret(metadatas, content).then(function(secretObject){
         hashedTitle = secretObject.hashedTitle
@@ -177,7 +183,12 @@ Secretin.prototype.addSecretToFolder = function(hashedSecretTitle, hashedFolder)
           metaUser.folder = infos.folder;
         }
         if(infos.friendName === _this.currentUser.username){
-          metaUser.rights = 2;
+          if(typeof(_this.currentUser.currentFolder) === 'undefined'){
+            metaUser.rights = 2;
+          }
+          else{
+            metaUser.rights = _this.currentUser.keys[_this.currentUser.currentFolder].rights;
+          }
         }
         _this.currentUser.metadatas[hashedTitle].users[infos.friendName] = metaUser;
       });
@@ -451,25 +462,19 @@ Secretin.prototype.deleteSecret = function(hashedTitle){
   }).then(function(){
     return _this.api.deleteSecret(_this.currentUser, hashedTitle);
   }).then(function(wasLast){
-    var isLast = Promise.resolve();
-    if(wasLast){
-      isLast = isLast.then(function(){
-        var editFolderPromises = [];
-        Object.keys(_this.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
-          editFolderPromises.push(
-            _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
-              return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
-            }).then(function(secret){
-              var folder = JSON.parse(secret);
-              delete folder[hashedTitle];
-              return _this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder);
-            })
-          )
-        });
-        return Promise.all(editFolderPromises);
-      });
-    }
-    return isLast;
+    var editFolderPromises = [];
+    Object.keys(_this.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
+      editFolderPromises.push(
+        _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
+          return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
+        }).then(function(secret){
+          var folder = JSON.parse(secret);
+          delete folder[hashedTitle];
+          return _this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder);
+        })
+      );
+    });
+    return Promise.all(editFolderPromises);
   }, function(err){
     throw(err);
   });

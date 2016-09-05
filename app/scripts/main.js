@@ -498,11 +498,33 @@ function getSecretList(all){
     btn.addEventListener('click', function(e){ delete secretin.currentUser.currentFolder; getSecretList(); });
     elem.appendChild(btn);
     secretsList.appendChild(elem);
+    if(secretin.currentUser.keys[secretin.currentUser.currentFolder].rights > 1){
+      document.getElementById('addSecretPopup').style.display = '';
+      document.getElementById('createFolder').style.display = '';
+    }
+    else{
+      document.getElementById('addSecretPopup').style.display = 'none';
+      document.getElementById('createFolder').style.display = 'none';
+    }
+  }
+  else{
+    document.getElementById('addSecretPopup').style.display = '';
+    document.getElementById('createFolder').style.display = '';
   }
 
+
+
   Object.keys(secretin.currentUser.metadatas).forEach(function(hashedTitle){
+    var knowFolder = false;
+    Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
+      if(typeof(secretin.currentUser.metadatas[hashedFolder]) !== 'undefined'){
+        knowFolder = true;
+      }
+    });
+
     if(
       (typeof(secretin.currentUser.currentFolder) === 'undefined' && Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).length === 0) ||
+      (typeof(secretin.currentUser.currentFolder) === 'undefined' && !knowFolder) ||
       (typeof(secretin.currentUser.currentFolder) !== 'undefined' && typeof(secretin.currentUser.metadatas[hashedTitle].folders[secretin.currentUser.currentFolder]) !== 'undefined') ||
       all
     ){
@@ -630,9 +652,9 @@ function uiSecretList(hashedTitle, metadatas){
 
   if(secretin.currentUser.keys[hashedTitle].rights > 1){
     elem.appendChild(shareBtn);
-  }
-  if(secretin.currentUser.keys[hashedTitle].rights > 0){
-    elem.appendChild(deleteBtn);
+    if(Object.keys(metadatas.folders).length === 0 || secretin.currentUser.currentFolder in metadatas.folders){
+      elem.appendChild(deleteBtn);
+    }
   }
 
   return elem;

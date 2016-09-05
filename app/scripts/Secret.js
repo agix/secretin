@@ -84,7 +84,7 @@ Secret.prototype.newField = function(data, index){
 
   var iconGenerate = document.createElement('a');
   iconGenerate.classList.add('icon');
-  iconGenerate.title = 'Copy';
+  iconGenerate.title = 'Generate';
   iconGenerate.textContent = '⎁';
 
   iconGenerate.addEventListener('click', function(e){
