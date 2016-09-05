@@ -89,13 +89,11 @@ Secretin.prototype.addSecret = function(metadatas, content){
         return _this.getAllMetadatas();
       }).then(function(){
         if(typeof(_this.currentUser.currentFolder) !== 'undefined'){
-          resolve(_this.addSecretToFolder(hashedTitle, _this.currentUser.metadatas[_this.currentUser.currentFolder].title))
+          resolve(_this.addSecretToFolder(hashedTitle, _this.currentUser.currentFolder))
         }
         else{
           resolve();
         }
-      }).then(function(){
-        resolve();
       }, function(err){
         throw(err);
       });
@@ -130,63 +128,99 @@ Secretin.prototype.editSecret = function(hashedTitle, metadatas, content){
   });
 }
 
-Secretin.prototype.addSecretToFolder = function(hashedSecretTitle, folderName){
+Secretin.prototype.addSecretToFolder = function(hashedSecretTitle, hashedFolder){
   var _this = this;
-  return new Promise(function(resolve, reject){
-    var hashedFolder = false;
-    Object.keys(_this.currentUser.metadatas).forEach(function(hashedTitle){
-      if(typeof(_this.currentUser.metadatas[hashedTitle].type) !== 'undefined' && _this.currentUser.metadatas[hashedTitle].type === 'folder' && _this.currentUser.metadatas[hashedTitle].title === folderName){
-        hashedFolder = hashedTitle;
-      }
-    });
-    if(hashedFolder === false){
-      reject('Folder not found');
-    }
-    else{
-      var sharedSecretObjectsPromises = [];
-      Object.keys(_this.currentUser.metadatas[hashedFolder].users).forEach(function(user){
-        if(user !== _this.currentUser.username){
-          var friend = new User(user);
-          sharedSecretObjectsPromises.push(_this.getSharedSecretObject(hashedSecretTitle, friend, _this.currentUser.metadatas[hashedFolder].users[user].rights));
+  var sharedSecretObjectsPromises = [];
+  Object.keys(_this.currentUser.metadatas[hashedFolder].users).forEach(function(friendName){
+    sharedSecretObjectsPromises = sharedSecretObjectsPromises.concat(
+      (function(){
+        var friend = new User(friendName);
+        return _this.api.getPublicKey(friend.username).then(function(publicKey){
+          return friend.importPublicKey(publicKey);
+        }).then(function(){
+          return _this.getSharedSecretObjects(hashedSecretTitle, friend, _this.currentUser.metadatas[hashedFolder].users[friend.username].rights, []);
+        });
+      })()
+    );
+  });
+
+  var metadatasUsers = {}
+  return Promise.all(sharedSecretObjectsPromises).then(function(sharedSecretObjectsArray){
+    var fullSharedSecretObjects = [];
+    sharedSecretObjectsArray.forEach(function(sharedSecretObjects){
+      sharedSecretObjects.forEach(function(sharedSecretObject){
+        if(typeof(metadatasUsers[sharedSecretObject.hashedTitle]) === 'undefined'){
+          metadatasUsers[sharedSecretObject.hashedTitle] = []
+        }
+        metadatasUsers[sharedSecretObject.hashedTitle].push({friendName: sharedSecretObject.username, folder: sharedSecretObject.inFolder});
+        delete sharedSecretObject.inFolder;
+        if(_this.currentUser.username !== sharedSecretObject.username){
+          delete sharedSecretObject.username;
+          fullSharedSecretObjects.push(sharedSecretObject);
         }
       });
-
-      return Promise.all(sharedSecretObjectsPromises).then(function(sharedSecretObjects){
-        return _this.api.addSecretToFolder(_this.currentUser, sharedSecretObjects, hashedSecretTitle, hashedFolder);
-      }).then(function(){
-        Object.keys(_this.currentUser.metadatas[hashedFolder].users).forEach(function(user){
-          var metaUser = {rights: _this.currentUser.metadatas[hashedFolder].users[user].rights, folder: folderName};
-          if(user === _this.currentUser.username){
-            metaUser.rights = 2;
-          }
-          _this.currentUser.metadatas[hashedSecretTitle].users[user] = metaUser;
-        });
-        _this.currentUser.metadatas[hashedSecretTitle].folders[hashedFolder] = {name: folderName};
-        return _this.resetMetadatas(hashedSecretTitle);
-      }).then(function(){
-        return _this.api.getSecret(hashedFolder, _this.currentUser);
-      }).then(function(encryptedSecret){
-        return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
-      }).then(function(secret){
-        var folder = JSON.parse(secret);
-        folder[hashedSecretTitle] = 1;
-        resolve(_this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder));
-      }, function(err){
-        reject(err)
-      });
+    });
+    return _this.api.shareSecret(_this.currentUser, fullSharedSecretObjects);
+  }).then(function(){
+    var resetMetaPromises = [];
+    if(typeof(_this.currentUser.currentFolder) !== 'undefined'){
+      delete _this.currentUser.metadatas[hashedSecretTitle].folders[_this.currentUser.currentFolder];
     }
+    _this.currentUser.metadatas[hashedSecretTitle].folders[hashedFolder] = {name: _this.currentUser.metadatas[hashedFolder].title};
+    Object.keys(metadatasUsers).forEach(function(hashedTitle){
+      metadatasUsers[hashedTitle].forEach(function(infos){
+        var metaUser = {rights: _this.currentUser.metadatas[hashedFolder].users[infos.friendName].rights};
+        if(typeof(infos.folder) === 'undefined'){
+          metaUser.folder = _this.currentUser.metadatas[hashedFolder].title;
+        }
+        else{
+          metaUser.folder = infos.folder;
+        }
+        if(infos.friendName === _this.currentUser.username){
+          metaUser.rights = 2;
+        }
+        _this.currentUser.metadatas[hashedTitle].users[infos.friendName] = metaUser;
+      });
+
+      resetMetaPromises.push(_this.resetMetadatas(hashedTitle));
+    });
+    return Promise.all(resetMetaPromises);
+  }).then(function(){
+    return _this.api.getSecret(hashedFolder, _this.currentUser);
+  }).then(function(encryptedSecret){
+    return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
+  }).then(function(secret){
+    var folder = JSON.parse(secret);
+    folder[hashedSecretTitle] = 1;
+    return _this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder);
   });
 }
 
-Secretin.prototype.getSharedSecretObject = function(hashedTitle, friend, rights){
+Secretin.prototype.getSharedSecretObjects = function(hashedTitle, friend, rights, fullSharedSecretObjects, folderName){
   var _this = this;
-  return _this.api.getPublicKey(friend.username).then(function(publicKey){
-    return friend.importPublicKey(publicKey);
-  }).then(function(){
+  var isFolder = Promise.resolve();
+  var sharedSecretObjectPromises = [];
+  if(typeof(_this.currentUser.metadatas[hashedTitle].type) !== 'undefined' && _this.currentUser.metadatas[hashedTitle].type === 'folder'){
+    isFolder = isFolder.then(function(){
+      return _this.api.getSecret(hashedTitle, _this.currentUser).then(function(encryptedSecret){
+        return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedTitle].key);
+      }).then(function(secrets){
+        Object.keys(JSON.parse(secrets)).forEach(function(hash){
+          sharedSecretObjectPromises.push(_this.getSharedSecretObjects(hash, friend, rights, fullSharedSecretObjects, _this.currentUser.metadatas[hashedTitle].title));
+        });
+        return Promise.all(sharedSecretObjectPromises);
+      });
+    });
+  }
+
+  return isFolder.then(function(){
     return _this.currentUser.shareSecret(friend, _this.currentUser.keys[hashedTitle].key, hashedTitle);
   }).then(function(secretObject){
     secretObject.rights = rights;
-    return secretObject;
+    secretObject.inFolder = folderName;
+    secretObject.username = friend.username;
+    fullSharedSecretObjects.push(secretObject);
+    return fullSharedSecretObjects;
   }, function(err){
     throw(err);
   });
@@ -200,75 +234,109 @@ Secretin.prototype.resetMetadatas = function(hashedTitle){
   }).then(function(secret){
     secretObject = JSON.parse(secret);
     return _this.editSecret(hashedTitle, _this.currentUser.metadatas[hashedTitle], secretObject);
-  }).then(function(){
-    return secretObject;
   });
 }
 
 
-Secretin.prototype.shareSecret = function(type, hashedTitle, friendName, rights){
+Secretin.prototype.shareSecret = function(hashedTitle, friendName, rights, type){
   var _this = this;
-  if(_this.currentUser.metadatas[hashedTitle].type !== 'folder' && type === 'folder'){
-    return _this.addSecretToFolder(hashedTitle, friendName);
-  }
-  else{
-    var friend = new User(friendName);
-    return _this.getSharedSecretObject(hashedTitle, friend, rights).then(function(sharedSecretObject){
-      return _this.api.shareSecret(_this.currentUser, sharedSecretObject);
-    }).then(function(){
-      _this.currentUser.metadatas[hashedTitle].users[friend.username] = {rights: rights};
-      return _this.resetMetadatas(hashedTitle);
-    }).then(function(secretObject){
-      if(typeof(_this.currentUser.metadatas[hashedTitle].type) !== 'undefined' && _this.currentUser.metadatas[hashedTitle].type === 'folder'){
-        return _this.shareFolderSecrets(Object.keys(secretObject), friend, rights, _this.currentUser.metadatas[hashedTitle].title);
+  if(type === 'folder'){
+    return new Promise(function(resolve, reject){
+      var hashedFolder = false;
+      Object.keys(_this.currentUser.metadatas).forEach(function(hash){
+        if(typeof(_this.currentUser.metadatas[hash].type) !== 'undefined' && _this.currentUser.metadatas[hash].type === 'folder' && _this.currentUser.metadatas[hash].title === friendName){
+          hashedFolder = hash;
+        }
+      });
+      if(hashedFolder === false){
+        reject('Folder not found');
       }
       else{
-        return;
+        if(hashedTitle === hashedFolder){
+          reject('You can\'t put this folder in itself.');
+        }
+        else{
+          resolve(_this.addSecretToFolder(hashedTitle, hashedFolder));
+        }
       }
+    });
+  }
+  else{
+    var sharedSecretObjects;
+    var friend = new User(friendName);
+    return _this.api.getPublicKey(friend.username).then(function(publicKey){
+      return friend.importPublicKey(publicKey);
+    }).then(function(){
+      return _this.getSharedSecretObjects(hashedTitle, friend, rights, []);
+    }).then(function(rSharedSecretObjects){
+      sharedSecretObjects = rSharedSecretObjects;
+      return _this.api.shareSecret(_this.currentUser, sharedSecretObjects);
+    }).then(function(){
+      var resetMetaPromises = [];
+      sharedSecretObjects.forEach(function(sharedSecretObject){
+        _this.currentUser.metadatas[sharedSecretObject.hashedTitle].users[friend.username] = {rights: rights};
+        if(typeof(sharedSecretObject.inFolder) !== 'undefined'){
+          _this.currentUser.metadatas[sharedSecretObject.hashedTitle].users[friend.username].folder = sharedSecretObject.inFolder;
+        }
+        resetMetaPromises.push(_this.resetMetadatas(sharedSecretObject.hashedTitle));
+      });
+      return Promise.all(resetMetaPromises);
     }, function(err){
       throw(err);
     });
   }
 }
 
-Secretin.prototype.shareFolderSecrets = function(secretList, friend, rights, folderName){
+Secretin.prototype.shareFolderSecrets = function(hashedFolder, friend, rights){
   var _this = this;
   var shareSecretPromises = [];
   secretList.forEach(function(hashedTitle){
     if(typeof(_this.currentUser.metadatas[hashedTitle]) !== 'undefined'){
-      _this.currentUser.metadatas[hashedTitle].users[friend.username] = {rights: rights, folder: folderName};
       shareSecretPromises.push(
-        _this.resetMetadatas(hashedTitle).then(function(){
-          return _this.currentUser.shareSecret(friend, _this.currentUser.keys[hashedTitle].key, hashedTitle);
-        }).then(function(sharedSecretObject){
+        _this.currentUser.shareSecret(friend, _this.currentUser.keys[hashedTitle].key, hashedTitle).then(function(sharedSecretObject){
           sharedSecretObject.rights = rights;
           return sharedSecretObject;
         })
-      )
+      );
     }
   });
   return Promise.all(shareSecretPromises).then(function(sharedSecretObjects){
-    return _this.api.shareMultipleSecrets(_this.currentUser, sharedSecretObjects);
+    return _this.api.shareSecret(_this.currentUser, sharedSecretObjects);
+  }).then(function(){
+    var resetMetaPromises = [];
+    secretList.forEach(function(hashedTitle){
+      _this.currentUser.metadatas[hashedTitle].users[friend.username] = {rights: rights, folder: _this.currentUser.metadatas[hashedFolder].title};
+      resetMetaPromises.push(_this.resetMetadatas(hashedTitle));
+    });
+    return Promise.all(resetMetaPromises);
   });
 }
 
-Secretin.prototype.unshareSecret = function(hashedTitle, friendName, friendName2){ //friendName2 exists to help migration
+Secretin.prototype.unshareSecret = function(hashedTitle, friendName){
   var _this = this;
   var secret = {};
   var isFolder = Promise.resolve();
   if(typeof(_this.currentUser.metadatas[hashedTitle].type) !== 'undefined' && _this.currentUser.metadatas[hashedTitle].type === 'folder'){
-    isFolder.then(function(){
-      return _this.unshareFolderSecrets(hashedTitle, friendName, friendName2);
+    isFolder = isFolder.then(function(){
+      return _this.unshareFolderSecrets(hashedTitle, friendName);
     });
   }
 
   return isFolder.then(function(){
-    return _this.api.unshareSecret(_this.currentUser, friendName, hashedTitle, friendName2);
+    return _this.api.unshareSecret(_this.currentUser, [friendName], hashedTitle);
   }).then(function(){
     delete _this.currentUser.metadatas[hashedTitle].users[friendName];
+    return _this.resetMetadatas(hashedTitle);
+  }).then(function(){
     return _this.renewKey(hashedTitle);
   }, function(err){
-    throw(err);
+    if(err.status === 'Desync'){
+      delete _this.currentUser.metadatas[err.datas.title].users[err.datas.friendName];
+      return _this.resetMetadatas(hashedTitle);
+    }
+    else{
+      throw(err);
+    }
   });
 }
 
@@ -277,11 +345,11 @@ Secretin.prototype.unshareFolderSecrets = function(hashedFolder, friendName, fri
   return _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
     return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
   }).then(function(secrets){
-    var unshareSecretPromises = [];
-    Object.keys(JSON.parse(secrets)).forEach(function(hashedTitle){
-      unshareSecretPromises.push(_this.unshareSecret(hashedTitle, friendName, friendName2));
-    });
-    return Promise.all(unshareSecretPromises);
+    return Object.keys(JSON.parse(secrets)).reduce(function(promise, hashedTitle){
+      return promise.then(function(){
+        return _this.unshareSecret(hashedTitle, friendName);
+      });
+    }, Promise.resolve());
   });
 }
 
@@ -335,7 +403,7 @@ Secretin.prototype.removeSecretFromFolder = function(hashedTitle, hashedFolder){
       usersToDelete.push(username);
     }
   });
-  return _this.api.removeSecretFromFolder(_this.currentUser, hashedFolder, usersToDelete, hashedTitle).then(function(){
+  return _this.api.unshareSecret(_this.currentUser, usersToDelete, hashedTitle).then(function(){
     usersToDelete.forEach(function(username){
       if(username !== _this.currentUser.username){
         delete _this.currentUser.metadatas[hashedTitle].users[username];
@@ -369,32 +437,54 @@ Secretin.prototype.getSecret = function(hashedTitle){
 
 Secretin.prototype.deleteSecret = function(hashedTitle){
   var _this = this;
-  delete _this.currentUser.metadatas[hashedTitle].users[_this.currentUser.username];
-  return _this.resetMetadatas(hashedTitle).then(function(){
+  var wasLast = false;
+  var isFolder = Promise.resolve();
+  if(typeof(_this.currentUser.metadatas[hashedTitle].type) !== 'undefined' && _this.currentUser.metadatas[hashedTitle].type === 'folder'){
+    isFolder = isFolder.then(function(){
+      return _this.deleteFolderSecrets(hashedTitle);
+    });
+  }
+
+  return isFolder.then(function(){
+    delete _this.currentUser.metadatas[hashedTitle].users[_this.currentUser.username];
+    return _this.resetMetadatas(hashedTitle);
+  }).then(function(){
     return _this.api.deleteSecret(_this.currentUser, hashedTitle);
   }).then(function(wasLast){
+    var isLast = Promise.resolve();
     if(wasLast){
-      var editFolderPromises = [];
-      Object.keys(_this.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
-        editFolderPromises.push(
-          _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
-            return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
-          }).then(function(secret){
-            var folder = JSON.parse(secret);
-            delete folder[hashedTitle];
-            return _this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder);
-          })
-        )
-      });
-      return Promise.all(editFolderPromises).then(function(){
-        return _this.refreshKeys();
+      isLast = isLast.then(function(){
+        var editFolderPromises = [];
+        Object.keys(_this.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
+          editFolderPromises.push(
+            _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
+              return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
+            }).then(function(secret){
+              var folder = JSON.parse(secret);
+              delete folder[hashedTitle];
+              return _this.editSecret(hashedFolder, _this.currentUser.metadatas[hashedFolder], folder);
+            })
+          )
+        });
+        return Promise.all(editFolderPromises);
       });
     }
-    else{
-      return _this.refreshKeys();
-    }
+    return isLast;
   }, function(err){
     throw(err);
+  });
+}
+
+Secretin.prototype.deleteFolderSecrets = function(hashedFolder){
+  var _this = this;
+  return _this.api.getSecret(hashedFolder, _this.currentUser).then(function(encryptedSecret){
+    return _this.currentUser.decryptSecret(encryptedSecret, _this.currentUser.keys[hashedFolder].key);
+  }).then(function(secrets){
+    return Object.keys(JSON.parse(secrets)).reduce(function(promise, hashedTitle){
+      return promise.then(function(){
+        return _this.deleteSecret(hashedTitle);
+      });
+    }, Promise.resolve());
   });
 }
 

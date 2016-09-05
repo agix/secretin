@@ -177,12 +177,12 @@ User.prototype.decryptAllMetadatas = function(allMetadatas){
   var _this = this;
   var decryptMetadatasPromises = []
   var hashedTitles = Object.keys(_this.keys);
-
+  _this.metadatas = {};
   hashedTitles.forEach(function(hashedTitle){
-    _this.metadatas = {};
     decryptMetadatasPromises.push(
       _this.decryptSecret(allMetadatas[hashedTitle], _this.keys[hashedTitle].key).then(function(metadatas){
         _this.metadatas[hashedTitle] = JSON.parse(metadatas);
+        return;
       })
     )
   });

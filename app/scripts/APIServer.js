@@ -56,6 +56,8 @@ API.prototype.deleteSecret = function(user, hashedTitle){
     return DELETE(_this.db+'/user/'+hashedUsername+'/'+hashedTitle, {
       token: bytesToHexString(token)
     });
+  }).then(function(datas){
+    return datas;
   });
 };
 
@@ -99,36 +101,39 @@ API.prototype.newKey = function(user, hashedTitle, secret, wrappedKeys){
   });
 };
 
-API.prototype.unshareSecret = function(user, friendName, hashedTitle, hashedFriendUsername){
+API.prototype.unshareSecret = function(user, friendNames, hashedTitle){
   var _this = this;
   var hashedUsername;
+  var hashedFriendUserames = [];
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
-    return SHA256(friendName);
-  }).then(function(rHashedFriendUsername){
-    if(typeof(hashedFriendUsername) === 'undefined'){
-      hashedFriendUsername = bytesToHexString(rHashedFriendUsername);
-    }
+    var hashedFriendUseramePromises = [];
+    friendNames.forEach(function(username){
+      hashedFriendUseramePromises.push(SHA256(username));
+    });
+    return Promise.all(hashedFriendUseramePromises);
+  }).then(function(rHashedFriendUserames){
+    rHashedFriendUserames.forEach(function(hashedFriendUserame){
+      hashedFriendUserames.push(bytesToHexString(hashedFriendUserame));
+    });
     return user.getToken(_this);
   }).then(function(token){
     return POST(_this.db+'/unshare/'+hashedUsername+'/'+hashedTitle,{
-      friendName: hashedFriendUsername,
+      friendNames: hashedFriendUserames,
       token: bytesToHexString(token)
     });
   });
 };
 
-API.prototype.shareSecret = function(user, sharedSecretObject){
+API.prototype.shareSecret = function(user, sharedSecretObjects){
   var _this = this;
   var hashedUsername;
   return SHA256(user.username).then(function(rHashedUsername){
     hashedUsername = bytesToHexString(rHashedUsername);
     return user.getToken(_this);
   }).then(function(token){
-    return POST(_this.db+'/share/'+hashedUsername+'/'+sharedSecretObject.hashedTitle,{
-      friendName: sharedSecretObject.friendName,
-      key: sharedSecretObject.wrappedKey,
-      rights: sharedSecretObject.rights,
+    return POST(_this.db+'/share/'+hashedUsername,{
+      secretObjects: sharedSecretObjects,
       token: bytesToHexString(token)
     });
   });
@@ -213,6 +218,8 @@ API.prototype.getAllMetadatas = function(user){
     return user.getToken(_this);
   }).then(function(token){
     return GET(_this.db+'/allMetadatas/'+hashedUsername+'?token='+bytesToHexString(token));
+  }).then(function(datas){
+    return datas
   });
 };
 

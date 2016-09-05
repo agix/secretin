@@ -3,7 +3,11 @@ var app = express();
 var bodyParser = require('body-parser');
 var _ = require('lodash');
 var cradle = require('cradle');
-var db = new(cradle.Connection)().database('secretin');
+var db = new(cradle.Connection)().database('secretin', 5984, {
+  cache: false,
+  raw: false,
+  forceSave: false
+});
 var forge = require('node-forge');
 var rsa = forge.pki.rsa;
 var BigInteger = forge.jsbn.BigInteger;
@@ -42,7 +46,7 @@ function secretExists(title, callback){
 
 function checkToken(name, token, callback){
   client.get(name, function(err, res){
-    callback(res === token)
+    callback(res === token);
   });
 }
 
@@ -364,14 +368,13 @@ app.delete('/user/:name/:title', function (req, res) {
               var userDoc = {user: {}};
               userDoc.user[req.params.name] = user;
               delete userDoc.user[req.params.name].keys[req.params.title];
-
               db.save(metaUser.id, metaUser.rev, userDoc, function (err, ret) {
                 if(err === null && ret.ok === true){
                   if(secretDoc.secret[req.params.title].users.length === 0){
                     db.remove(metaSecret.id, metaSecret.rev, function(err, ret){
                       if(err === null && ret.ok === true){
-                        res.writeHead(200, 'Secret deleted', {});
-                        res.end();
+                        res.writeHead(200, 'Secret deleted', {'Content-Type': 'application/json; charset=utf-8'});
+                        res.end(JSON.stringify(true));
                       }
                       else{
                         console.log(err)
@@ -429,7 +432,7 @@ app.get('/challenge/:name', function (req, res) {
 
       var publicKey = rsa.setPublicKey(new BigInteger(n.toString('hex'), 16), new BigInteger(e.toString('hex'), 16));
       var bytes = forge.random.getBytesSync(32);
-      client.setex(req.params.name, 10, new Buffer(bytes, 'binary').toString('hex'));
+      client.setex(req.params.name, 20, new Buffer(bytes, 'binary').toString('hex'));
       var encrypted = publicKey.encrypt(bytes, 'RSA-OAEP', {
         md: forge.md.sha256.create()
       });
@@ -581,78 +584,113 @@ app.post('/newKey/:name/:title', function (req, res) {
 app.post('/unshare/:name/:title', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
-      if(req.params.name !== req.body.friendName){
-        userExists(req.params.name, function(uExists, user, metaUser){
-          if(uExists){
-            userExists(req.body.friendName, function(uFExists, fUser, metaFUser){
-              if(uFExists){
-                secretExists(req.params.title, function(sExists, secret, metaSecret){
-                  if(sExists){
-                    if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
-                      if(typeof fUser.keys[req.params.title] === 'undefined'){
-                        res.writeHead(404, 'You didn\'t share this secret with this friend', {});
-                        res.end();
-                      }
-                      else{
-                        delete fUser.keys[req.params.title];
-                        var fUserDoc = {user: {}};
-                        fUserDoc.user[req.body.friendName] = fUser;
-
-                        var secretDoc = {secret: {}};
-                        secretDoc.secret[req.params.title] = secret;
-                        _.remove(secretDoc.secret[req.params.title].users, function(currentUser) {
-                          return (currentUser === req.body.friendName);
-                        });
-
-                        db.save(metaFUser.id, metaFUser.rev, fUserDoc, function (err, ret) {
-                          if(err === null && ret.ok === true){
-                            db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
-                              if(err === null && ret.ok === true){
-                                res.writeHead(200, 'Secret unshared', {});
-                                res.end();
-                              }
-                              else{
-                                console.log(err)
-                                res.writeHead(500, 'Unknown error', {});
-                                res.end();
-                              }
-                            });
+      userExists(req.params.name, function(uExists, user, metaUser){
+        if(uExists){
+          secretExists(req.params.title, function(sExists, secret, metaSecret){
+            if(sExists){
+              var secretDoc = {secret: {}};
+              secretDoc.secret[req.params.title] = secret;
+              if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
+                var errors = [];
+                var FUsers = {};
+                var nbSecretDone = 0;
+                var yourself = 0;
+                req.body.friendNames.forEach(function(friendName){
+                  userExists(friendName, function(uFExists, fUser, metaFUser){
+                    if(req.params.name !== friendName){
+                      if(uFExists){
+                        if(typeof fUser.keys[req.params.title] !== 'undefined'){
+                          nbSecretDone += 1;
+                          if(metaFUser.id in FUsers){
+                            delete FUsers[metaFUser.id].doc.user[friendName].keys[req.params.title];
                           }
                           else{
-                            console.log(err)
-                            res.writeHead(500, 'Unknown error', {});
-                            res.end();
+                            delete fUser.keys[req.params.title];
+                            var fUserDoc = {user: {}};
+                            fUserDoc.user[friendName] = fUser;
+                            FUsers[metaFUser.id] = {rev: metaFUser.rev, doc: fUserDoc};
                           }
-                        });
+
+                          _.remove(secretDoc.secret[req.params.title].users, function(currentUser) {
+                            return (currentUser === friendName);
+                          });
+
+                          if((errors.length+nbSecretDone) === (req.body.friendNames.length-yourself)){
+                            if(errors.length === 0){
+                              var errors2 = [];
+                              var nbUsers = 0;
+                              Object.keys(FUsers).forEach(function(id){
+                                db.save(id, FUsers[id].rev, FUsers[id].doc, function (err, ret) {
+                                  nbUsers += 1;
+                                  if(err !== null || ret.ok !== true){
+                                    console.log(err)
+                                    errors2.push('Unknown error');
+                                  }
+                                  if(nbUsers === Object.keys(FUsers).length){
+                                    db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
+                                      if(err !== null || ret.ok !== true){
+                                        console.log(err)
+
+                                        errors2.push('Unknown error');
+                                      }
+                                      if(errors2.length === 0){
+                                        res.writeHead(200, 'Secret unshared', {});
+                                        res.end();
+                                      }
+                                      else{
+                                        res.writeHead(500, 'Unknown error', {});
+                                        res.end();
+                                      }
+                                    });
+                                  }
+                                });
+                              })
+                            }
+                            else{
+                              res.writeHead(500, errors.join('\n'), {});
+                              res.end();
+                            }
+                          }
+                        }
+                        else{
+                          res.writeHead(500, 'Desync', {'Content-Type': 'application/json; charset=utf-8'});
+                          res.end(JSON.stringify({friendName: friendName, title: req.params.title}));
+                        }
+                      }
+                      else{
+                        errors.push('Friend ' + friendName + ' not found');
+                        if(errors.length === req.body.secretObjects.length){
+                          res.writeHead(500, errors.join('\n'), {});
+                          res.end();
+                        }
                       }
                     }
                     else{
-                      res.writeHead(403, 'You can\'t unshare this secret', {});
-                      res.end();
+                      yourself = 1;
+                      if(req.body.friendNames.length === 1){
+                        res.writeHead(200, 'You can\'t unshare with yourself', {});
+                        res.end();
+                      }
                     }
-                  }
-                  else{
-                    res.writeHead(404, 'Secret not found', {});
-                    res.end();
-                  }
+                  });
                 });
               }
               else{
-                res.writeHead(404, 'Friend not found', {});
+                res.writeHead(403, 'You can\'t unshare this secret', {});
                 res.end();
               }
-            });
-          }
-          else{
-            res.writeHead(404, 'User not found', {});
-            res.end();
-          }
-        });
-      }
-      else{
-        res.writeHead(403, 'You can\'t unshare with youself', {});
-        res.end();
-      }
+            }
+            else{
+              res.writeHead(404, 'Secret not found', {});
+              res.end();
+            }
+          });
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
+        }
+      });
     }
     else{
       res.writeHead(403, 'Token invalid', {});
@@ -661,79 +699,145 @@ app.post('/unshare/:name/:title', function (req, res) {
   });
 });
 
+
 // share a secret
-app.post('/share/:name/:title', function (req, res) {
+app.post('/share/:name', function (req, res) {
   checkToken(req.params.name, req.body.token, function(valid){
     if(valid){
-      if(req.params.name !== req.body.friendName){
-        userExists(req.params.name, function(uExists, user, metaUser){
-          if(uExists){
-            userExists(req.body.friendName, function(uFExists, fUser, metaFUser){
-              if(uFExists){
-                secretExists(req.params.title, function(sExists, secret, metaSecret){
-                  if(sExists){
-                    if(typeof user.keys[req.params.title].rights !== 'undefined' && user.keys[req.params.title].rights > 1){
-                      var secretDoc = {secret: {}};
-                      secret.users.push(req.body.friendName);
-                      secret.users = _.uniq(secret.users);
-                      secretDoc.secret[req.params.title] = secret
+      userExists(req.params.name, function(uExists, user, metaUser){
+        if(uExists){
+          var errors = [];
+          var FUsers = {};
+          var Secrets = {};
+          var nbSecretDone = 0;
+          if(req.body.secretObjects.length === 0){
+            res.writeHead(200, 'Secret shared', {});
+            res.end();
+          }
+          else{
+            req.body.secretObjects.forEach(function(secretObject){
+              secretExists(secretObject.hashedTitle, function(sExists, secret, metaSecret){
+                if(sExists){
+                  if(typeof user.keys[secretObject.hashedTitle].rights !== 'undefined' && user.keys[secretObject.hashedTitle].rights > 1){
+                    if(req.params.name !== secretObject.friendName){
+                      userExists(secretObject.friendName, function(uFExists, fUser, metaFUser){
+                        if(uFExists){
+                          nbSecretDone += 1;
+                          if(metaSecret.id in Secrets){
+                            Secrets[metaSecret.id].doc.secret[secretObject.hashedTitle].users.push(secretObject.friendName);
+                            Secrets[metaSecret.id].doc.secret[secretObject.hashedTitle].users = _.uniq(Secrets[metaSecret.id].doc.secret[secretObject.hashedTitle].users)
+                          }
+                          else{
+                            var secretDoc = {secret: {}};
+                            secret.users.push(secretObject.friendName);
+                            secret.users = _.uniq(secret.users);
+                            secretDoc.secret[secretObject.hashedTitle] = secret
 
-                      fUser.keys[req.params.title] = {
-                        key: req.body.key,
-                        rights: req.body.rights
-                      };
+                            Secrets[metaSecret.id] = {rev: metaSecret.rev, doc: secretDoc};
+                          }
 
-                      var fUserDoc = {user: {}};
-                      fUserDoc.user[req.body.friendName] = fUser;
+                          if(metaFUser.id in FUsers){
+                            FUsers[metaFUser.id].doc.user[secretObject.friendName].keys[secretObject.hashedTitle] = {
+                              key: secretObject.wrappedKey,
+                              rights: secretObject.rights
+                            };
+                          }
+                          else{
+                            fUser.keys[secretObject.hashedTitle] = {
+                              key: secretObject.wrappedKey,
+                              rights: secretObject.rights
+                            };
 
-                      db.save(metaFUser.id, metaFUser.rev, fUserDoc, function (err, ret) {
-                        if(err === null && ret.ok === true){
-                          db.save(metaSecret.id, metaSecret.rev, secretDoc, function (err, ret) {
-                            if(err === null && ret.ok === true){
-                              res.writeHead(200, 'Secret shared', {});
-                              res.end();
+                            var fUserDoc = {user: {}};
+                            fUserDoc.user[secretObject.friendName] = fUser;
+                            FUsers[metaFUser.id] = {rev: metaFUser.rev, doc: fUserDoc};
+                          }
+
+                          if((nbSecretDone + errors.length) === req.body.secretObjects.length){
+                            if(errors.length === 0){
+                              var errors2 = []
+                              var nbUsers = 0;
+                              Object.keys(FUsers).forEach(function(idFuser){
+                                db.save(idFuser, FUsers[idFuser].rev, FUsers[idFuser].doc, function (err, ret) {
+                                  nbUsers += 1;
+                                  if(err !== null || ret.ok !== true){
+                                    console.log(FUsers[idFuser]);
+                                    console.log(err)
+                                    errors2.push('Unknown error');
+                                  }
+                                  if(nbUsers === Object.keys(FUsers).length){
+                                    var nbSecrets = 0;
+                                    Object.keys(Secrets).forEach(function(idSecret){
+                                      db.save(idSecret, Secrets[idSecret].rev, Secrets[idSecret].doc, function (err, ret) {
+                                        nbSecrets += 1;
+                                        if(err !== null || ret.ok !== true){
+                                          console.log(Secrets[idSecret]);
+                                          console.log(err)
+                                          errors2.push('Unknown error');
+                                        }
+                                        if(nbSecrets === Object.keys(Secrets).length){
+                                          if(errors2.length === 0){
+                                            res.writeHead(200, 'Secret shared', {});
+                                            res.end();
+                                          }
+                                          else{
+                                            res.writeHead(500, 'Unknown error', {});
+                                            res.end();
+                                          }
+                                        }
+                                      });
+                                    });
+                                  }
+                                });
+                              });
                             }
                             else{
-                              console.log(err)
-                              res.writeHead(500, 'Unknown error', {});
+                              res.writeHead(500, errors.join('\n'), {});
                               res.end();
                             }
-                          });
+                          }
                         }
                         else{
-                          console.log(err)
-                          res.writeHead(500, 'Unknown error', {});
-                          res.end();
+                          errors.push('Friend ' + secretObject.friendName + ' not found');
+                          if(errors.length === req.body.secretObjects.length){
+                            res.writeHead(500, errors.join('\n'), {});
+                            res.end();
+                          }
                         }
                       });
                     }
                     else{
-                      res.writeHead(403, 'You can\'t share this secret', {});
-                      res.end();
+                      errors.push('You can\'t share with yourself');
+                      if(errors.length === req.body.secretObjects.length){
+                        res.writeHead(500, errors.join('\n'), {});
+                        res.end();
+                      }
                     }
                   }
                   else{
-                    res.writeHead(404, 'Secret not found', {});
+                    errors.push('You can\'t share secret '+secretObject.hashedTitle);
+                    if(errors.length === req.body.secretObjects.length){
+                      res.writeHead(500, errors.join('\n'), {});
+                      res.end();
+                    }
+                  }
+                }
+                else{
+                  errors.push('Secret ' + secretObject.hashedTitle + ' not found');
+                  if(errors.length === req.body.secretObjects.length){
+                    res.writeHead(500, errors.join('\n'), {});
                     res.end();
                   }
-                });
-              }
-              else{
-                res.writeHead(404, 'Friend not found', {});
-                res.end();
-              }
+                }
+              });
             });
           }
-          else{
-            res.writeHead(404, 'User not found', {});
-            res.end();
-          }
-        });
-      }
-      else{
-        res.writeHead(403, 'You can\'t share with youself', {});
-        res.end();
-      }
+        }
+        else{
+          res.writeHead(404, 'User not found', {});
+          res.end();
+        }
+      });
     }
     else{
       res.writeHead(403, 'Token invalid', {});

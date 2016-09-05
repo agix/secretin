@@ -36,7 +36,13 @@ function reqData(path, datas, type){
         resolve(xhr.statusText);
       }
       else{
-        reject(xhr.statusText);
+        try{
+          var datas = JSON.parse(xhr.responseText);
+          reject({status: xhr.statusText, datas: datas});
+        }
+        catch(err){
+          reject(xhr.statusText);
+        }
       }
     };
     xhr.send(JSON.stringify(datas));
@@ -44,18 +50,5 @@ function reqData(path, datas, type){
 }
 
 function DELETE(path, datas){
-  return new Promise(function(resolve, reject){
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', encodeURI(path));
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        resolve(xhr.statusText);
-      }
-      else{
-        reject(xhr.statusText);
-      }
-    };
-    xhr.send(JSON.stringify(datas));
-  });
+  return reqData(path, datas, 'DELETE');
 }

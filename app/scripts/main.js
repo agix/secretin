@@ -268,7 +268,7 @@ document.getElementById('share').addEventListener('click', function(e){
 
   e.target.disabled = true;
   e.target.value = 'Please wait...';
-  secretin.shareSecret(type, hashedTitle, friendName, rights).then(function(users){
+  secretin.shareSecret(hashedTitle, friendName, rights, type).then(function(users){
     return secretin.getAllMetadatas();
   }).then(function(){
     getSecretList();
@@ -361,6 +361,13 @@ document.getElementById('search').addEventListener('keyup', function(e){
   }
 });
 
+document.getElementById('radioFolder').addEventListener('click', function(e) {
+  document.getElementById('rights').style.display = 'none';
+});
+
+document.getElementById('radioUser').addEventListener('click', function(e) {
+  document.getElementById('rights').style.display = '';
+});
 
 document.getElementById('getDb').addEventListener('click', function(e) {
   if(typeof secretin.currentUser !== 'undefined' && typeof secretin.currentUser.username !== 'undefined'){
@@ -408,6 +415,7 @@ function destroyUser(user){
   document.getElementById('secrets').style.display = 'none';
   document.getElementById('login').style.display = '';
   document.getElementById('deco').style.display = 'none';
+  document.location.hash = '#keys';
   user.disconnect();
 }
 
@@ -425,6 +433,8 @@ function uiDeleteSecret(e){
   var sure = confirm('Are you sure to delete ' + title + '?');
   if(sure){
     secretin.deleteSecret(hashedTitle).then(function(){
+      return secretin.refreshKeys();
+    }).then(function(){
       return secretin.getAllMetadatas();
     }).then(function(){
       getSecretList();
@@ -440,12 +450,12 @@ function share(e, hashedTitle){
 
   document.getElementById('shareSecretHash').value = hashedTitle;
   if(metadatas.type === 'folder'){
+    document.getElementById('radioUser').checked = 'checked';
+    document.getElementById('rights').style.display = '';
     document.getElementById('shareSecretTitle').textContent = 'Folder '+metadatas.title;
-    document.getElementById('radioType').style.display = 'none';
   }
   else{
     document.getElementById('shareSecretTitle').textContent = metadatas.title;
-    document.getElementById('radioType').style.display = '';
   }
 
   document.location.hash = '#shareSecret';
@@ -476,6 +486,12 @@ function getSecretList(all){
   if(typeof(secretin.currentUser.currentFolder) !== 'undefined'){
     var elem = document.createElement('li');
     elem.classList.add('secretElem');
+    var titleSpan = document.createElement('span');
+    titleSpan.textContent = 'Folder '+secretin.currentUser.metadatas[secretin.currentUser.currentFolder].title;
+    elem.appendChild(titleSpan);
+    var br = document.createElement('br');
+    elem.appendChild(br);
+
     var btn = document.createElement('input');
     btn.type = 'button';
     btn.value = 'Return';
@@ -485,16 +501,12 @@ function getSecretList(all){
   }
 
   Object.keys(secretin.currentUser.metadatas).forEach(function(hashedTitle){
-    if(typeof(secretin.currentUser.currentFolder) === 'undefined' || typeof(secretin.currentUser.metadatas[hashedTitle].folders[secretin.currentUser.currentFolder]) !== 'undefined' || all){
-      var dontKnowFolder = true;
-      Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).forEach(function(hashedFolder){
-        if(typeof(secretin.currentUser.metadatas[hashedFolder]) !== 'undefined' && secretin.currentUser.currentFolder !== hashedFolder){
-          dontKnowFolder = false;
-        }
-      });
-      if(dontKnowFolder || all){
-        secretsList.appendChild(uiSecretList(hashedTitle, secretin.currentUser.metadatas[hashedTitle]));
-      }
+    if(
+      (typeof(secretin.currentUser.currentFolder) === 'undefined' && Object.keys(secretin.currentUser.metadatas[hashedTitle].folders).length === 0) ||
+      (typeof(secretin.currentUser.currentFolder) !== 'undefined' && typeof(secretin.currentUser.metadatas[hashedTitle].folders[secretin.currentUser.currentFolder]) !== 'undefined') ||
+      all
+    ){
+      secretsList.appendChild(uiSecretList(hashedTitle, secretin.currentUser.metadatas[hashedTitle]));
     }
   });
   document.getElementById('search').focus();
@@ -593,12 +605,7 @@ function uiSecretList(hashedTitle, metadatas){
 
   var deleteBtn = document.createElement('input');
   deleteBtn.type = 'button';
-  if(metadatas.type === 'folder'){
-    deleteBtn.value = 'Leave';
-  }
-  else{
-    deleteBtn.value = 'Delete';
-  }
+  deleteBtn.value = 'Delete';
   deleteBtn.addEventListener('click', uiDeleteSecret);
 
   var titleSpan = document.createElement('span');
@@ -624,7 +631,9 @@ function uiSecretList(hashedTitle, metadatas){
   if(secretin.currentUser.keys[hashedTitle].rights > 1){
     elem.appendChild(shareBtn);
   }
-  elem.appendChild(deleteBtn);
+  if(secretin.currentUser.keys[hashedTitle].rights > 0){
+    elem.appendChild(deleteBtn);
+  }
 
   return elem;
 }
