@@ -10,20 +10,18 @@ var gzip    = require('gulp-gzip');
 var zip     = require('gulp-zip');
 var exec    = require('child_process').exec;
 
+
 gulp.task('buildLocal', function() {
   gulp.src('app/index.html')
-    .pipe(build())
     .pipe(gulp.dest('dist'))
 
+  gulp.src('node_modules/secretin/dist/secretin.js')
+    .pipe(gulp.dest('dist/scripts'))
 
   gulp.src(
     [
       'app/scripts/main.js',
-      'app/scripts/User.js',
       'app/scripts/Secret.js',
-      'app/scripts/APIAlone.js',
-      'app/scripts/Secretin.js',
-      'app/scripts/lib/**',
       'app/scripts/typeAlone.js'
     ]
   )
@@ -33,14 +31,33 @@ gulp.task('buildLocal', function() {
   gulp.src('app/styles/**')
     .pipe(gulp.dest('dist/styles'));
 
-  // gulp.src('app/scripts/attack.js')
-  //   .pipe(gulp.dest('dist/scripts'));
-
   gulp.src('dist/**')
     .pipe(gulp.dest('server/client/alone'));
 
+});
+
+gulp.task('buildServ', function() {
+  gulp.src('app/index.html')
+    .pipe(gulp.dest('server/client'))
+
+  gulp.src('node_modules/secretin/dist/secretin.js')
+    .pipe(gulp.dest('server/client/scripts'))
+
+  gulp.src(
+    [
+      'app/scripts/main.js',
+      'app/scripts/Secret.js',
+      'app/scripts/typeServer.js'
+    ]
+  )
+    .pipe(concat('main.js'))
+    .pipe(gulp.dest('server/client/scripts'));
+
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('server/client/styles'));
 
 });
+
 
 gulp.task('buildElectron', function() {
 
@@ -62,49 +79,9 @@ gulp.task('buildElectron', function() {
 
 });
 
-gulp.task('buildServ', function() {
-  gulp.src('app/index.html')
-    .pipe(build())
-    .pipe(gulp.dest('server/client'))
-
-  gulp.src(
-    [
-      'app/scripts/main.js',
-      'app/scripts/User.js',
-      'app/scripts/Secret.js',
-      'app/scripts/APIServer.js',
-      'app/scripts/Secretin.js',
-      'app/scripts/lib/**',
-      'app/scripts/typeServer.js'
-    ]
-  )
-    .pipe(concat('main.js'))
-    .pipe(gulp.dest('server/client/scripts'));
-
-  gulp.src('app/styles/**')
-    .pipe(gulp.dest('server/client/styles'));
-
-  gulp.src('app/indexMigrate.html')
-    .pipe(build())
-    .pipe(gulp.dest('server/client'))
-
-  gulp.src(
-    [
-      'app/scripts/mainMigrate.js',
-      'app/scripts/User.js',
-      'app/scripts/Secret.js',
-      'app/scripts/APIServer.js',
-      'app/scripts/Secretin.js',
-      'app/scripts/lib/**',
-      'app/scripts/typeServer.js'
-    ]
-  )
-    .pipe(concat('mainMigrate.js'))
-    .pipe(gulp.dest('server/client/scripts'));
-});
-
 gulp.task('watch', function() {
   gulp.watch(['app/scripts/**'], ['build']);
+  gulp.watch(['node_modules/secretin/dist/secretin.js'], ['build']);
   gulp.watch(['app/styles/**'], ['build']);
   gulp.watch(['app/*.html'], ['build']);
 });

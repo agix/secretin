@@ -13,9 +13,6 @@ var rsa = forge.pki.rsa;
 var BigInteger = forge.jsbn.BigInteger;
 var redis = require('redis');
 
-
-OPTIONAL_SALT = '';
-
 client = redis.createClient();
 
 app.use(express.static('client'));
@@ -82,17 +79,35 @@ app.get('/user/:name/:hash', function (req, res) {
     if(exists){
         checkBruteforce(req.ip, req.params.hash, function(isBruteforce){
           var md = forge.md.sha256.create();
-          md.update(req.params.hash+OPTIONAL_SALT);
+          md.update(req.params.hash);
           // if it's wrong password send fake private key
-          if(isBruteforce || md.digest().toHex() !== user.pass.hash){
-            user.privateKey = {
-              privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
-              iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
-            };
-            user.keys = {};
-            user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
-          }
-          res.json(user);
+
+          db.view('secrets/getMetadatas', { key: req.params.name }, function (err, doc) {
+            if(err === null && typeof doc !== 'undefined'){
+              var allMetadatas = {};
+              doc.forEach(function(metadatas){
+                allMetadatas[metadatas.res.title] = {iv: metadatas.res.iv_meta, secret: metadatas.res.metadatas};
+              });
+
+              user.metadatas = allMetadatas;
+
+              if(isBruteforce || md.digest().toHex() !== user.pass.hash){
+                user.privateKey = {
+                  privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
+                  iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
+                };
+                user.keys = {};
+                user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+                user.metadatas = {};
+              }
+
+              res.json(user);
+            }
+            else{
+              console.log(err);
+              res.writeHead(500, 'Unknown error', {});
+            }
+          });
         });
     }
     else{
@@ -113,9 +128,28 @@ app.get('/user/:name', function (req, res) {
             iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
           };
           user.keys = {};
+          user.metadatas = {};
           user.pass.hash = forge.util.bytesToHex((forge.random.getBytesSync(32)));
+          res.json(user);
         }
-        res.json(user);
+        else{
+          db.view('secrets/getMetadatas', { key: req.params.name }, function (err, doc) {
+            if(err === null && typeof doc !== 'undefined'){
+              var allMetadatas = {};
+              doc.forEach(function(metadatas){
+                allMetadatas[metadatas.res.title] = {iv: metadatas.res.iv_meta, secret: metadatas.res.metadatas};
+              });
+
+              user.metadatas = allMetadatas;
+              res.json(user);
+            }
+            else{
+              console.log(err);
+              res.writeHead(500, 'Unknown error', {});
+            }
+          });
+        }
+
       });
     }
     else{
@@ -125,15 +159,13 @@ app.get('/user/:name', function (req, res) {
   });
 });
 
-//get database export
-app.get('/database/:name/:hash', function (req, res) {
+// get database export
+app.get('/database/:name', function (req, res) {
   var db = {users : {}, secrets: {}};
   userExists(req.params.name, function(exists, user){
     if(exists){
-      checkBruteforce(req.ip, req.params.hash, function(isBruteforce){
-        var md = forge.md.sha256.create();
-        md.update(req.params.hash + OPTIONAL_SALT);
-        if(isBruteforce || md.digest().toHex() !== user.pass.hash){
+      checkToken(req.params.name, req.query.token, function(valid){
+        if(!valid){
           user.privateKey = {
             privateKey: forge.util.bytesToHex((forge.random.getBytesSync(3232))),
             iv: forge.util.bytesToHex((forge.random.getBytesSync(16)))
@@ -191,32 +223,6 @@ app.get('/secret/:title', function (req, res) {
   });
 });
 
-//get all metadatas
-app.get('/allMetadatas/:name', function (req, res) {
-  checkToken(req.params.name, req.query.token, function(valid){
-    if(valid){
-      db.view('secrets/getMetadatas', { key: req.params.name }, function (err, doc) {
-        if(err === null && typeof doc !== 'undefined'){
-          var allMetadatas = {};
-          doc.forEach(function(metadatas){
-            allMetadatas[metadatas.res.title] = {iv: metadatas.res.iv_meta, secret: metadatas.res.metadatas};
-          });
-          res.json(allMetadatas);
-        }
-        else{
-          console.log(err);
-          res.writeHead(500, 'Unknown error', {});
-        }
-      });
-    }
-    else{
-      res.writeHead(403, 'Token invalid', {});
-      res.end();
-    }
-  });
-});
-
-
 //create user
 app.post('/user/:name', function (req, res) {
   userExists(req.params.name, function(exists){
@@ -227,7 +233,7 @@ app.post('/user/:name', function (req, res) {
     else{
       var doc = {user: {}};
       var md = forge.md.sha256.create();
-      md.update(req.body.pass.hash+OPTIONAL_SALT);
+      md.update(req.body.pass.hash);
       req.body.pass.hash = md.digest().toHex();
       doc.user[req.params.name] = req.body;
       db.save(doc, function (err, ret) {
@@ -254,7 +260,7 @@ app.put('/user/:name', function (req, res) {
           var doc = {user: {}};
 
           var md = forge.md.sha256.create();
-          md.update(req.body.pass.hash+OPTIONAL_SALT);
+          md.update(req.body.pass.hash);
           req.body.pass.hash = md.digest().toHex();
 
           doc.user[req.params.name] = user;
