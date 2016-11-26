@@ -31,6 +31,38 @@ gulp.task('buildLocal', function() {
   gulp.src('app/styles/**')
     .pipe(gulp.dest('dist/styles'));
 
+  gulp.src('app/scripts/qrcode.js')
+    .pipe(gulp.dest('dist/scripts'));
+
+  gulp.src('dist/**')
+    .pipe(gulp.dest('server/client/alone'));
+
+});
+
+
+gulp.task('buildKeepassImport', function() {
+  gulp.src('app/keepass.html')
+    .pipe(gulp.dest('dist'))
+
+  gulp.src('node_modules/secretin/dist/secretin.js')
+    .pipe(gulp.dest('dist/scripts'))
+
+  gulp.src(
+    [
+      'app/scripts/keepass.js',
+      'app/scripts/Secret.js',
+      'app/scripts/typeAlone.js'
+    ]
+  )
+    .pipe(concat('keepass.js'))
+    .pipe(gulp.dest('dist/scripts'));
+
+  gulp.src('app/styles/**')
+    .pipe(gulp.dest('dist/styles'));
+
+  gulp.src('app/scripts/qrcode.js')
+    .pipe(gulp.dest('dist/scripts'));
+
   gulp.src('dist/**')
     .pipe(gulp.dest('server/client/alone'));
 
@@ -51,6 +83,9 @@ gulp.task('buildServ', function() {
     ]
   )
     .pipe(concat('main.js'))
+    .pipe(gulp.dest('server/client/scripts'));
+
+    gulp.src('app/scripts/qrcode.js')
     .pipe(gulp.dest('server/client/scripts'));
 
   gulp.src('app/styles/**')
@@ -86,7 +121,7 @@ gulp.task('watch', function() {
   gulp.watch(['app/*.html'], ['build']);
 });
 
-gulp.task('build', ['buildLocal', 'buildServ', 'buildElectron']);
+gulp.task('build', ['buildLocal', 'buildServ', 'buildElectron', 'buildKeepassImport']);
 
 gulp.task('default', ['build', 'watch']);
 

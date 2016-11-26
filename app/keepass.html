@@ -67,6 +67,7 @@
       </div>
     </ol>
 
+
     <ol class="widget-list" id="keys">
       <div>
         <span id="login">
@@ -80,6 +81,7 @@
           <a id="addSecretPopup" class="btn2" href="#secretPopup">Add secret</a>
           <a id="createFolder" class="btn2" href="#folderPopup">Create folder</a>
           <a id="changePasswordA" class="btn2" href="#changePassword">Change password</a>
+          <a id="importKeepass" class="btn2" href="#importPopup">Import from keepass xml</a>
           <input type="button" class="btn2" id="totp" value="Activate TOTP" />
           <input type="button" class="btn2" id="regShortpass" value="Register this device" />
           <input type="button" class="btn2" id="deco" value="Disconnect"/>
@@ -107,6 +109,15 @@
         <div id="secretContent">
         </div>
         <div id="popupBottom"></div>
+      </div>
+    </div>
+
+    <div id="importPopup" class="overlay">
+      <div class="popup" style="width:90%">
+        <h2 id="importPopupTitle">Import from keepass xml</h2>
+        <a class="close" id="closeShareSecret" href="#keys">×</a><br />
+        <input type="button" class="btn2" id="doImport" value="Proceed"><br />
+        <textarea style="width:90%" rows="25" id="xmlContent"></textarea>
       </div>
     </div>
 
@@ -156,7 +167,7 @@
     </div>
 
   </div>
-    <script src="scripts/main.js"></script>
+    <script src="scripts/keepass.js"></script>
     <script src="scripts/secretin.js"></script>
     <script src="scripts/qrcode.js"></script>
   </body>

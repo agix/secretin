@@ -1,19 +1,12 @@
-var Secret = function(type, rawContent) {
+var Secret = function(type, secretObject) {
   this.parent = false;
   this.editable = true;
   this.fields = [];
 
-  if(typeof(rawContent) !== 'undefined'){
+  if(typeof(secretObject) !== 'undefined'){
     this.editable = false;
-
-    try {
-      var object = JSON.parse(rawContent);
-      for(var key in object){
-        this[key] = object[key];
-      }
-    }
-    catch(e) {
-      this.fields.push({label:'secret', content: rawContent});
+    for(var key in secretObject){
+      this[key] = secretObject[key];
     }
   }
   else{

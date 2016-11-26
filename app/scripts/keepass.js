@@ -121,6 +121,52 @@ document.getElementById('createFolder').addEventListener('click', function(e){
   folderPopup.insertBefore(popupClose, folderContent);
 });
 
+function parseGroup(group, parent){
+  var entries = group.querySelectorAll(":scope > Entry")
+  for(var i = 0; i < entries.length; i++){
+    var title = '';
+    var secret = [];
+    var strings = entries[i].getElementsByTagName('String');
+    for(var j = 0; j < strings.length; j++){
+      var key = strings[j].children[0].textContent;
+      var value = strings[j].children[1].textContent;
+      if(key === 'Title'){
+        title = value;
+      }
+      else{
+        secret.push({label: key, content: value});
+      }
+    }
+    console.log(`var secretId = secretin.addSecret(${title}, secret)`);
+    if(typeof(parent) !== 'undefined'){
+      console.log(`secretin.addSecretToFolder(${title}, ${parent})`);
+    }
+  }
+  var groups = group.querySelectorAll(":scope > Group");
+  for(var i = 0; i < groups.length; i++){
+    var title = groups[i].getElementsByTagName('Name')[0].textContent;
+    console.log(`var folderId = secretin.addFolder(${title})`);
+    if(typeof(parent) !== 'undefined'){
+      console.log(`secretin.addSecretToFolder(${title}, ${parent})`);
+    }
+    parseGroup(groups[i], title);
+  }
+}
+
+
+function parseKeepass(xml){
+  var parser = new DOMParser();
+  var xmlDoc = parser.parseFromString(xml, 'application/xml');
+  console.log(xmlDoc);
+  var root = xmlDoc.getElementsByTagName('Root')[0].children[0];
+  parseGroup(root);
+}
+
+
+document.getElementById('doImport').addEventListener('click', function(e){
+  parseKeepass(document.getElementById('xmlContent').value);
+});
+
 document.getElementById('addSecretPopup').addEventListener('click', function(e){
   var secret = new Secret('secret');
 
